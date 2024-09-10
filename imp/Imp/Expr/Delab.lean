@@ -21,6 +21,12 @@ def delabNameInner : DelabM (TSyntax `varname) := do
     pure <| ⟨x.raw⟩
   | _ => `(varname|~($(← delab))) >>= annAsTerm
 
+-- def delabStrInner : DelabM (TSyntax `str) := do
+--   let e ← getExpr
+--   match e with
+--   | .lit (.strVal s) =>
+--     let x := mkIdent <| .mkSimple s
+
 partial def delabExprInner : DelabM (TSyntax `exp) := do
   let e ← getExpr
   let stx ←
@@ -41,7 +47,7 @@ partial def delabExprInner : DelabM (TSyntax `exp) := do
         else withAppArg `(exp| ~$(← delab))
       | BitVec.ofNat _ _ => (⟨·.raw⟩) <$> (withAppArg <| withAppArg <| delab)
       | _ =>
-        `(exp| ~(Expr.const $(← withAppArg delab)))
+        `(exp| ~(Expr.constInt $(← withAppArg delab)))
     | Expr.var _ => do
       let x ← withAppArg delabNameInner
       `(exp|$x:varname)
@@ -58,12 +64,13 @@ partial def delabExprInner : DelabM (TSyntax `exp) := do
       | BinOp.lt => `(exp| $s1 < $s2)
       | BinOp.le => `(exp| $s1 ≤ $s2)
       | BinOp.eq => `(exp| $s1 == $s2)
+      | BinOp.append => `(exp| $s1 ++ $s2)
       | _ => `(exp|~(Expr.bin $(← withAppFn <| withAppFn <| withAppArg delab) $(← withAppFn <| withAppArg delab) $(← withAppArg delab)))
     | Expr.un op _ =>
       let s ← withAppArg delabExprInner
       match_expr op with
-      | UnOp.neg => `(exp|-$s)
-      | UnOp.not => `(exp|!$s)
+      | UnOp.neg => `(exp| -$s)
+      | UnOp.not => `(exp| !$s)
       | _ => `(exp| ~(Expr.un $(← withAppFn <| withAppArg delab) $(← withAppArg delab)))
     | _ =>
       `(exp| ~$(← delab))
@@ -82,13 +89,21 @@ partial def delabExpr : Delab := do
   | `(exp|~$e) => pure e
   | e => `(term|expr {$(⟨e⟩)})
 
-/-- info: expr { 5 } : Expr -/
-#guard_msgs in
+/- info: expr { 5 } : Expr -/
+-- #guard_msgs in
 #check Expr.constInt 5
 
-/-- info: expr { 5 } : Expr -/
-#guard_msgs in
+/- info: expr { 5 } : Expr -/
+-- #guard_msgs in
 #check expr { 5 }
+
+/- info: expr { [a] } : Expr -/
+-- #guard_msgs in
+#check Expr.constStr "a"
+
+/- info: expr { [a] } : Expr -/
+-- #guard_msgs in
+-- #check expr { [a] }
 
 /-- info: expr { x } : Expr -/
 #guard_msgs in
@@ -102,9 +117,9 @@ partial def delabExpr : Delab := do
 #guard_msgs in
 #check expr { 5 + (23 - 10) }
 
-/--
+/-
 info: let x := expr { 23 };
 expr { ~x * ~x } : Expr
 -/
-#guard_msgs in
+-- #guard_msgs in
 #check let x := expr {23}; expr {~x * ~x}

@@ -7,7 +7,6 @@ namespace Imp
 inductive Value where
 | str : String -> Value
 | int : Int -> Value
-| bool : Bool -> Value
 
 instance : OfNat Value n := by
   constructor
@@ -48,7 +47,8 @@ namespace Expr
 /-- Helper that implements unary operators -/
 def UnOp.apply : UnOp → Value → Option Value
   | .neg, .int i => (Value.int ∘ Int.neg) <$> some i
-  | .not, .bool b => (Value.bool ∘ Bool.not) <$> some b
+  | .not, .int b => if b == 0 then some (Value.int 1) else some (Value.int 0)
+  | .not, .str s => some $ Value.int (if s.isEmpty then 1 else 0)
   | _, _ => none
 
 /-- Helper that implements binary operators -/
@@ -57,14 +57,15 @@ def BinOp.apply : BinOp → Value → Value → Option Value
   | .minus, .int i, .int j => some $ Value.int (i - j)
   | .times, .int i, .int j => some $ Value.int (i * j)
   | .div, .int i, .int j => if j == 0 then none else some $ Value.int (i / j)
-  | .and, .bool b, .bool c => some $ Value.bool (b && c)
-  | .or, .bool b, .bool c => some $ Value.bool (b || c)
-  | .eq, .int i, .int j => some $ Value.bool (i == j)
-  | .eq, .bool b, .bool c => some $ Value.bool (b == c)
-  | .eq, .str s, .str t => some $ Value.bool (s == t)
-  | .le, .int i, .int j => some $ Value.bool (i <= j)
-  | .lt, .int i, .int j => some $ Value.bool (i < j)
-  |.append, .str s, .str t => some $ Value.str (s ++ t)
+  | .and, .int b, .int c => some $ Value.int (b * c)
+  | .and, .str b, .str c => some $ Value.int (b ++ c).length
+  | .or, .int b, .int c => some $ Value.int (b + c)
+  | .or, .str s, .str t => some $ Value.str (s ++ t)
+  | .eq, .int i, .int j => some $ if i == j then Value.int 1 else Value.int 0
+  | .eq, .str s, .str t => some $ if s == t then (Value.int 1) else (Value.int 0)
+  | .le, .int i, .int j => some (if i <= j then Value.int 1 else Value.int 0)
+  | .lt, .int i, .int j => some $ if i < j then Value.int 1 else Value.int 0
+  | .append, .str s, .str t => some $ Value.str (s ++ t)
   | _, _, _ => none
 
 /--
@@ -73,8 +74,7 @@ Evaluates an expression, finding the value if it has one.
 Expressions that divide by zero don't have values - the result is undefined.
 -/
 def eval (σ : Env) : Expr → Option Value
-  | .constInt i => some $ Value.int i
-  | .constBool b => some $ .bool b
+  | .constInt i => some $ .int i
   | .constStr s => some $ .str s
   | .var x => σ.get x
   | .un op e => do

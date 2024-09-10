@@ -4,4 +4,3 @@ This file exists only to re-export the contents of the `Imp.Stmt` module hierarc
 import Imp.Stmt.Basic
 import Imp.Stmt.BigStep
 import Imp.Stmt.Delab
-import Imp.Stmt.Optimize

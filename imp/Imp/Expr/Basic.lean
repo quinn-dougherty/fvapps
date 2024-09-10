@@ -20,7 +20,6 @@ end Expr
 inductive Expr where
   | constInt (i : Int)
   | constStr (x : String)
-  | constBool (x : Bool)
   | var (name : String)
   | un (op : Expr.UnOp) (e : Expr)
   | bin (op : Expr.BinOp) (e1 e2 : Expr)

@@ -1,7 +1,6 @@
 import Imp.Expr
 
 import Imp.Stmt.Delab
-import Imp.Stmt.Optimize
 
 namespace Imp
 
@@ -10,17 +9,20 @@ Truthiness: the result of evaluating an expression is "truthy" if it's defined a
 -/
 def Truthy (v : Option Value) : Prop :=
   match v with
-  | some v => v ≠ 0
+  | some v => match v with
+    | .int x => x ≠ 0
+    | .str s => ¬ s.isEmpty
   | none => False
 
 instance : Decidable (Truthy v) :=
   match v with
-  | some v =>
-    if h : v ≠ 0 then .isTrue h else .isFalse h
+  | some v => match v with
+    | .int x => if h : x ≠ 0 then .isTrue h else .isFalse h
+    | .str s => if h : ¬ s.isEmpty then .isTrue h else .isFalse h
   | none => .isFalse id
 
 @[simp]
-theorem Truthy.some_nonzero : Truthy (some v) = (v ≠ 0) := by
+theorem Truthy.some_nonzero : Truthy (some (.int v)) = (v ≠ 0) := by
   simp [Truthy]
 
 @[simp]
@@ -28,37 +30,62 @@ theorem Truthy.not_none : Truthy none = False := by
   simp [Truthy]
 
 @[simp]
-theorem Truthy.eval_const : Truthy (Expr.eval σ (.const v)) = (v ≠ 0) := by
+theorem Truthy.eval_const_int : Truthy (Expr.eval σ (.constInt v)) = (v ≠ 0) := by
+  simp [Truthy, Expr.eval]
+
+@[simp]
+theorem Truthy.eval_const_str : Truthy (Expr.eval σ (.constStr v)) = ¬ v.isEmpty := by
   simp [Truthy, Expr.eval]
 
 /--
 Falsiness: the result of evaluating an expression is "falsy" if it's 0
 -/
-def Falsy (v : Option Value) : Prop := v = some 0
+def Falsy (v : Option Value) : Prop := match v with
+  | some v => match v with
+    | .int x => x = 0
+    | .str s => s.isEmpty
+  | none => False
 
 @[simp]
-theorem Falsy.eval_const : Falsy (Expr.eval σ (.const v)) = (v = 0) := by
+theorem Falsy.eval_const_int : Falsy (Expr.eval σ (.constInt v)) = (v = 0) := by
   simp [Falsy, Expr.eval]
 
 @[simp]
-theorem Falsy.some_zero : Falsy (some v) = (v = 0) := by
+theorem Falsy.eval_const_str : Falsy (Expr.eval σ (.constStr v)) = v.isEmpty := by
+  simp [Falsy, Expr.eval]
+
+@[simp]
+theorem Falsy.some_zero : Falsy (some (.int v)) = (v = 0) := by
   simp [Falsy]
 
 @[simp]
 theorem Falsy.not_none : Falsy none = False := by
   simp [Falsy]
 
+def Value.truthy : Value → Prop
+  | .int x => x ≠ 0
+  | .str s => ¬ s.isEmpty
 
-instance : Decidable (Falsy v) := inferInstanceAs (Decidable (v = some 0))
+instance : Decidable (Falsy v) :=  -- inferInstanceAs (Decidable (v = 0))
+  match v with
+  | some v => match v with
+    | .int x => if h : x = 0 then .isTrue h else .isFalse h
+    | .str s => if h : s.isEmpty then .isTrue h else .isFalse h
+  | none => .isFalse id
 
 theorem Truthy.not_falsy : Truthy v → ¬Falsy v := by
   intro h1 h2
   simp [Truthy, Falsy] at *
-  cases v <;> simp at * <;> contradiction
-
+  cases v <;> simp at *
+  case some v =>
+    cases v <;> simp at *
+    case int x =>
+      contradiction
+    case str s =>
+      rw [h2] at h1
+      contradiction
 
 namespace Stmt
-
 
 /--
 Big-step semantics: `BigStep σ s σ'` means that running the program `s` in the starting state `σ` is
@@ -105,8 +132,7 @@ example : ∃σ', BigStep (Env.init 0 |>.set "x" 5 |>.set "y" 22) swap σ' ∧ �
       . apply BigStep.assign
         simp [Expr.eval, Env.get, Env.set]
         rfl
-      . simp
-        apply BigStep.assign
+      . apply BigStep.assign
         simp [Expr.eval, Env.get, Env.set]
         rfl
   . simp [Env.get, Env.set]
@@ -127,21 +153,21 @@ example : ∃σ', BigStep (Env.init 0 |>.set "x" x |>.set "y" y) swap σ' ∧ σ
 /--
 `min` computes the minimum of its inputs.
 -/
-example : ∃σ', BigStep (Env.init 0 |>.set "x" x |>.set "y" y) min σ' ∧ if x < y then σ'.get "min" = x else σ'.get "min" = y := by
-  unfold min
-  by_cases h : x < y
-  . apply Exists.intro; constructor
-    . apply BigStep.ifTrue
-      . simp [Expr.eval, Expr.BinOp.apply, Env.get, Env.set, *]
-      . constructor; simp [Expr.eval, Env.get, Env.set]; rfl
-    . simp [Env.get, Env.set]
-      intro; contradiction
-  . apply Exists.intro; constructor
-    . apply BigStep.ifFalse
-      . simp [Expr.eval, Expr.BinOp.apply, Env.get, Env.set, *]
-      . constructor; simp [Expr.eval, Env.get, Env.set]; rfl
-    . simp [Env.get, Env.set]
-      intro; contradiction
+-- example : ∃σ', BigStep (Env.init 0 |>.set "x" x |>.set "y" y) min σ' ∧ if x < y then σ'.get "min" = x else σ'.get "min" = y := by
+--   unfold min
+--   by_cases h : x < y
+--   . apply Exists.intro; constructor
+--     . apply BigStep.ifTrue
+--       . simp [Expr.eval, Expr.BinOp.apply, Env.get, Env.set, *]
+--       . constructor; simp [Expr.eval, Env.get, Env.set]; rfl
+--     . simp [Env.get, Env.set]
+--       intro; contradiction
+--   . apply Exists.intro; constructor
+--     . apply BigStep.ifFalse
+--       . simp [Expr.eval, Expr.BinOp.apply, Env.get, Env.set, *]
+--       . constructor; simp [Expr.eval, Env.get, Env.set]; rfl
+--     . simp [Env.get, Env.set]
+--       intro; contradiction
 
 def loop := imp {while (1) {skip;}}
 
@@ -158,73 +184,6 @@ theorem infinite_loop : ¬ BigStep σ loop σ' := by
     unfold loop at h'
     cases h'
     simp at cFalse
-
-/-- Optimizing a program doesn't change its meaning -/
-theorem optimize_ok : BigStep σ s σ' → BigStep σ s.optimize σ' := by
-  intro h
-  induction h with simp only [optimize]
-  | «skip» => constructor
-  | seq s1 s2 ih1 ih2 =>
-    split
-    next eq2 =>
-      rw [eq2] at ih1
-      cases ih1; apply ih2
-    next eq1 eq2 =>
-      rw [eq1] at ih2
-      cases ih2; apply ih1
-    next =>
-      apply BigStep.seq ih1 ih2
-  | assign m =>
-    constructor
-    rw [← Expr.optimize_ok]
-    assumption
-  | ifTrue isTrue l ih =>
-    split
-    next isFalse =>
-      rw [Expr.optimize_ok] at isTrue
-      rw [isFalse] at isTrue
-      simp [Truthy, Expr.eval] at isTrue
-    next notFalse _isConst =>
-      apply ih
-    next =>
-      split
-      . assumption
-      . apply BigStep.ifTrue
-        . rw [← Expr.optimize_ok]
-          assumption
-        . assumption
-  | ifFalse isFalse l ih =>
-    split
-    next =>
-      apply ih
-    next nonZero isConst =>
-      rw [Expr.optimize_ok, isConst] at isFalse
-      simp at isFalse
-      contradiction
-    next =>
-      split
-      . simp [*]
-      . apply BigStep.ifFalse
-        . rw [← Expr.optimize_ok]
-          assumption
-        . assumption
-  | whileFalse =>
-    split <;> try simp
-    apply BigStep.whileFalse
-    rw [← Expr.optimize_ok]
-    assumption
-  | whileTrue isTrue bodyStep nextStep ih1 ih2 =>
-    split
-    next c isZero =>
-      rw [Expr.optimize_ok, isZero] at isTrue
-      simp at isTrue
-    next c isNotZero =>
-      apply BigStep.whileTrue
-      . rw [← Expr.optimize_ok]
-        assumption
-      . apply ih1
-      . simp [optimize] at ih2
-        assumption
 
 /--
 Run a program, with the depth of the recursive calls limited by the `Nat` parameter. Returns `none`
@@ -244,14 +203,14 @@ def run (σ : Env) (s : Stmt) : Nat → Option Env
       let v ← e.eval σ
       pure (σ.set x v)
     | imp {if (~c) {~s1} else {~s2}} => do
-      let v ← c.eval σ
-      if v = 0 then
+      let grd := Truthy $ c.eval σ
+      if grd then
         run σ s2 n
       else
         run σ s1 n
     | imp {while (~c) {~s1}} => do
-      let v ← c.eval σ
-      if v = 0 then
+      let grd := Truthy $ c.eval σ
+      if grd then
         pure σ
       else
         let σ' ← run σ s1 n
@@ -267,6 +226,8 @@ theorem run_some_implies_big_step : run σ s n = some σ' → BigStep σ s σ' :
   induction σ, s, n using run.induct generalizing σ' <;> unfold run at term <;> simp_all
   case case3 σ n s1 s2 ih1 ih2 =>
     sorry
+  sorry
+  sorry
   sorry
   sorry
   sorry

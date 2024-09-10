@@ -32,6 +32,9 @@ syntax varname : exp
 /-- Numeric constant -/
 syntax num : exp
 
+/-- Strings -/
+syntax:1 "[" str "]": exp
+
 /-- Arithmetic complement -/
 syntax:75 "-" exp:75 : exp
 
@@ -44,11 +47,6 @@ syntax:70 exp:70 " / " exp:71 : exp
 syntax:65 exp:65 " + " exp:66 : exp
 /-- Subtraction -/
 syntax:65 exp:65 " - " exp:66 : exp
-
-/-- Left shift -/
-syntax:55 exp:55 " <<< " exp:56 :exp
-/-- Right shift -/
-syntax:55 exp:55 " >>> " exp:56 :exp
 
 /-- Boolean negation -/
 syntax:75 "!" exp:75 : exp
@@ -63,15 +61,13 @@ syntax:50 exp:50 " > " exp:51 : exp
 /-- Equal -/
 syntax:45 exp:45 " == " exp:46 : exp
 
-/-- Bitwise and -/
-syntax:40 exp:40 " &&& " exp:41 :exp
-/-- Bitwise or -/
-syntax:40 exp:40 " ||| " exp:41 :exp
-
 /-- Boolean conjunction -/
 syntax:35 exp:35 " && " exp:36 : exp
 /-- Boolean disjunction -/
 syntax:35 exp:35 " || " exp:36 : exp
+
+/-- String append -/
+syntax:30 exp:30 " ++ " exp:31 : exp
 
 /-- Parentheses for grouping -/
 syntax "(" exp ")" : exp
@@ -85,7 +81,7 @@ syntax:min "expr " "{ " exp " }" : term
 open Lean in
 macro_rules
   | `(expr{$x:ident}) => `(Expr.var $(quote x.getId.toString))
-  | `(expr{$n:num}) => `(Expr.const $(quote n.getNat))
+  | `(expr{$n:num}) => `(Expr.constInt $(quote n.getNat))
 
   | `(expr{-$e}) => `(Expr.un .neg (expr{$e}))
   | `(expr{!$e}) => `(Expr.un .not (expr{$e}))
@@ -95,12 +91,6 @@ macro_rules
   | `(expr{$e1 - $e2}) => `(Expr.bin .minus (expr{$e1}) (expr{$e2}))
   | `(expr{$e1 / $e2}) => `(Expr.bin .div (expr{$e1}) (expr{$e2}))
 
-  | `(expr{$e1 >>> $e2}) => `(Expr.bin .rsh (expr{$e1}) (expr{$e2}))
-  | `(expr{$e1 <<< $e2}) => `(Expr.bin .lsh (expr{$e1}) (expr{$e2}))
-  | `(expr{$e1 ||| $e2}) => `(Expr.bin .bor (expr{$e1}) (expr{$e2}))
-  | `(expr{$e1 &&& $e2}) => `(Expr.bin .band (expr{$e1}) (expr{$e2}))
-
-
   | `(expr{$e1 && $e2}) => `(Expr.bin .and (expr{$e1}) (expr{$e2}))
   | `(expr{$e1 || $e2}) => `(Expr.bin .or (expr{$e1}) (expr{$e2}))
 
@@ -109,6 +99,7 @@ macro_rules
   | `(expr{$e1 == $e2}) => `(Expr.bin .eq (expr{$e1}) (expr{$e2}))
   | `(expr{$e1 ≥ $e2}) => `(Expr.bin .le (expr{$e2}) (expr{$e1}))
   | `(expr{$e1 > $e2}) => `(Expr.bin .lt (expr{$e2}) (expr{$e1}))
+  | `(expr{$e1 ++ $e2}) => `(Expr.bin .append (expr{$e1}) (expr{$e2}))
   | `(expr{($e)}) => `(expr{$e})
   | `(expr{~$stx}) => pure stx
 
