@@ -117,6 +117,10 @@ inductive BigStep : Env → Stmt → Env → Prop where
 
 attribute [simp] BigStep.skip
 
+syntax term:60 " / " term:61 " ↓ " term:62 : term
+macro_rules
+  | `($s / $σ ↓ $σ') => `(BigStep $σ $s $σ')
+
 /--
 `swap` terminates, and the resulting environment contains swapped inputs.
 -/

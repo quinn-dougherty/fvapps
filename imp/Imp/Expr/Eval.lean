@@ -21,6 +21,11 @@ namespace Env
 def set (x : String) (v : Value) (σ : Env) : Env :=
   fun y => if x == y then v else σ y
 
+def setOption (x : String) (v : Option Value) (σ : Env) : Env :=
+  match v with
+  | some v => σ.set x v
+  | none => σ
+
 /-- Look up a value in an environment -/
 def get (x : String) (σ : Env) : Value :=
   σ x
