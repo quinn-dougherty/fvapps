@@ -1,3 +1,12 @@
+# test outputs
+test/test_example_func.py
+
+# hypotheses
+.hypothesis/
+
+# env
+.env
+
 # python generated files
 __pycache__/
 *.py[oc]
@@ -6,8 +15,6 @@ dist/
 wheels/
 *.egg-info
 
-# env
-.env
 
 # venv
 .venv

@@ -15,9 +15,10 @@ class DebuggingAgent(ABC):
     def __init__(
         self,
         input: str,
+        scratchpad: str,
         model_name: str = "claude-3-opus-20240229",
         max_tokens_per_message: int = 512,
-        max_iterations: int = 3,
+        max_iterations: int = 5,
     ):
         self.model_name = model_name
         self.max_tokens_per_message = max_tokens_per_message
@@ -26,6 +27,7 @@ class DebuggingAgent(ABC):
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
         self.input = input
+        self.scratchpad = scratchpad
         self.conversation = []
 
     def send_appended_user_message(self, message: str):
@@ -64,6 +66,7 @@ class DebuggingAgent(ABC):
         loops = 0
         while not self.stopping_condition(returncode) and loops < self.max_iterations:
             loops += 1
+            print(f"Loop {loops}/{self.max_iterations}")
 
             # check that the code is valid
             if not self.verify_output_type(response):
@@ -72,7 +75,6 @@ class DebuggingAgent(ABC):
             
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(response)
-
 
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
@@ -95,7 +97,8 @@ class PythonAgent(DebuggingAgent):
 
     FIRST_PROMPT = lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
 
-    CONTINUOUS_PROMPT = lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n."""
+    CONTINUOUS_PROMPT = lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
+    Please fix your original output, again only generating code within the 3 backticks."""
 
     def verify_output_type(self, response: str):
         """Check that the model output is only code by looking for the backticks at the start and end."""
@@ -107,11 +110,11 @@ class PythonAgent(DebuggingAgent):
         if code.startswith("python"):
             code = code[6:]
 
-        with open("temp.py", "w") as f:
+        with open(self.scratchpad, "w") as f:
             f.write(code)
 
         result = subprocess.run(
-            ["pytest", "test/test_example_func.py"],
+            ["pytest", self.scratchpad],
             capture_output=True,
             text=True
         )
