@@ -1,4 +1,3 @@
-from typing import Callable
 from abc import ABC, abstractmethod
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -15,6 +14,7 @@ class DebuggingAgent(ABC):
 
     def __init__(
         self,
+        input: str,
         model_name: str = "claude-3-opus-20240229",
         max_tokens_per_message: int = 512,
         max_iterations: int = 3,
@@ -25,6 +25,7 @@ class DebuggingAgent(ABC):
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
+        self.input = input
         self.conversation = []
 
     def send_appended_user_message(self, message: str):
@@ -53,25 +54,30 @@ class DebuggingAgent(ABC):
     def stopping_condition(self, *args, **kwargs) -> bool:
         pass
 
-    def loop_until_condition(self, start: str):
+    def loop_until_condition(self):
         
         # run the first pass and get some code
-        response = self.send_appended_user_message(self.FIRST_PROMPT(start))  # type: ignore
+        response = self.send_appended_user_message(self.FIRST_PROMPT(self.input))  # type: ignore
+        self.conversation.append({"role": "assistant", "content": response})
 
+        returncode = 1
         loops = 0
-        while not self.stopping_condition(response) and loops < self.max_iterations:
+        while not self.stopping_condition(returncode) and loops < self.max_iterations:
             loops += 1
 
             # check that the code is valid
             if not self.verify_output_type(response):
+                print(response)
                 raise ValueError("The output from the model is not code.")
             
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(response)
 
+
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
+            self.conversation.append({"role": "assistant", "content": response})
 
         return
     
@@ -81,9 +87,10 @@ class DebuggingAgent(ABC):
 
 class PythonAgent(DebuggingAgent):
     SYSTEM_PROMPT = """
-    Your are a senior Python developer with expertise in generating property tests. You excel at 
+    You are a senior Python developer with expertise in generating property tests. You excel at 
     completely covering edge cases and possible inputs using pytest and hypothesis. Do not comment on the problem
     or the code itself, only generate code that can be directly exported into a file and ran.
+    Start your generation with 3 backticks, and end it with 3 backticks.
     """
 
     FIRST_PROMPT = lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
@@ -97,12 +104,14 @@ class PythonAgent(DebuggingAgent):
     def run_code(self, code: str):
         # strip the backticks
         code = code[3:-3]
+        if code.startswith("python"):
+            code = code[6:]
 
         with open("temp.py", "w") as f:
             f.write(code)
 
         result = subprocess.run(
-            ["python temp.py"],
+            ["pytest", "test/test_example_func.py"],
             capture_output=True,
             text=True
         )
