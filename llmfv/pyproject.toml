@@ -1,9 +1,10 @@
 [project]
-name = "nb"
+name = "llmfv"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
-    { name = "Quinn Dougherty", email = "quinnd@riseup.net" }
+    { name = "Quinn Dougherty", email = "quinnd@riseup.net" },
+    { name = "Ronak Mehta", email = "ronakrm@gmail.com" }
 ]
 dependencies = [
     "datasets>=2.21.0",
@@ -30,4 +31,12 @@ dev-dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/nb"]
+packages = ["src/llmfv"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+
+[tool.setuptools]
+packages = ["llmfv"]

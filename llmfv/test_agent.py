@@ -1,4 +1,4 @@
-from src.nb.claude_prompting import PythonAgent
+from llmfv.claude_prompting import PythonAgent
 from math import sin, cos
 
 def example_function(a: int):
@@ -13,6 +13,7 @@ def example_function(a: int):
     return sin(a)**2 + cos(a)**2
     """
 
-    response = agent.query_base_case(example_function_code)
+    agent.loop_until_condition(example_function_code)
 
-    print(response)
+if __name__ == "__main__":
+    test_python_agent()
