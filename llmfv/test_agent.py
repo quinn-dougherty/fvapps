@@ -1,7 +1,7 @@
 from llmfv.claude_prompting import PythonAgent
 
 
-def test_python_agent():
+def simple_python_agent():
     with open('example_func.py', 'r') as file:
         content = file.read()
 
