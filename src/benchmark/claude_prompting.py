@@ -29,8 +29,8 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         inp: str,
         scratchpad: str,
         model_name: str = "claude-3-5-sonnet-20240620",  # TODO: make cli arg
-        max_tokens_per_message: int = 512,
-        max_iterations: int = 2,  # TODO: make cli arg
+        max_tokens_per_message: int = 1024,
+        max_iterations: int = 5,  # TODO: make cli arg
     ):
         self.model_name = model_name
         self.max_tokens_per_message = max_tokens_per_message
@@ -69,31 +69,30 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
     def loop_until_condition(self) -> bool:
 
+        print(f"Loop 1/{self.max_iterations}")
         # run the first pass and get some code
         response = self.send_appended_user_message(self.FIRST_PROMPT(self.inp))  # type: ignore
         self.conversation.append({"role": "assistant", "content": response})
-
-        returncode = 1
-        loops = 0
-        while not self.stopping_condition(returncode) and loops < self.max_iterations:
-            loops += 1
-            print(f"Loop {loops}/{self.max_iterations}")
-
-            code = self.extract_code(response)
-
-            # subprocess call to run it and track outputs and exit codes
-            stdout, stderr, returncode = self.run_code(code)
-
-            # if not done, append the response to the conversation and get a new response
-            # with secondary prompt scaffold
-            response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
-            self.conversation.append({"role": "assistant", "content": response})
-
-        # Final Code Try
+        # breakpoint()
         code = self.extract_code(response)
 
         # subprocess call to run it and track outputs and exit codes
         stdout, stderr, returncode = self.run_code(code)
+
+        loops = 1
+        while not self.stopping_condition(returncode) and loops < self.max_iterations:
+            loops += 1
+            print(f"Loop {loops}/{self.max_iterations}")
+
+            # if not done, append the response to the conversation and get a new response
+            # with secondary prompt scaffold
+            response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
+            # breakpoint()
+            self.conversation.append({"role": "assistant", "content": response})
+            code = self.extract_code(response)
+
+            # subprocess call to run it and track outputs and exit codes
+            stdout, stderr, returncode = self.run_code(code)
 
         return self.stopping_condition(returncode)
 
