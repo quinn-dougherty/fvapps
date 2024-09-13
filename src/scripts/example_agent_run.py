@@ -1,15 +1,17 @@
 from benchmark.claude_prompting import PythonAgent, LeanAgent
 
+EXAMPLE = "string"
+
 
 def python_main():
 
     # TODO: use pathlib
-    with open("artefacts/examples/circle.py", "r") as file:
-        content = file.read()
+    with open(f"artefacts/examples/{EXAMPLE}.py", "r") as f:
+        content = f.read()
 
     agent = PythonAgent(
         inp=content,
-        scratchpad="artefacts/examples/test_circle.py",
+        scratchpad=f"artefacts/examples/test_{EXAMPLE}.py",
     )
     final_exit_code = agent.loop_until_condition()
 
@@ -20,8 +22,8 @@ def python_main():
 
 def lean_main():
 
-    with open("artefacts/examples/test_circle.py", "r") as file:
-        content = file.read()
+    with open(f"artefacts/examples/test_{EXAMPLE}.py", "r") as f:
+        content = f.read()
 
     agent = LeanAgent(
         inp=content,
