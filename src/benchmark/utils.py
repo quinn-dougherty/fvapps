@@ -7,9 +7,10 @@ def extract_single_backticks(text) -> str | None:
     return match.group(1) if match else None
 
 
-def check_and_strip_language_declaration(code: str, language: str = "python"):
+def check_and_strip_language_declaration(code: str, language: str = "python") -> str:
     """
     Checks if the code starts with a language declaration and removes it.
+    Assumes that the language declaration is the first line of the code block.
     """
     if code.startswith(language):
         code = code[code.index("\n") + 1 :]
@@ -17,7 +18,7 @@ def check_and_strip_language_declaration(code: str, language: str = "python"):
     return code
 
 
-def extract_code_block(text: str, language: str = "python"):
+def extract_code_block(text: str, language: str = "python") -> str:
     """
     Extracts the first code block from the given text by:
     1. Removing surrounding text outside of backticks.
@@ -30,4 +31,4 @@ def extract_code_block(text: str, language: str = "python"):
 
     code_block = check_and_strip_language_declaration(code_block, language=language)
 
-    return code_block.strip() if code_block else None
+    return code_block.strip()
