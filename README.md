@@ -31,6 +31,13 @@ challenging LLMs to write dependently typed _and_ formally verified code
 - [ ] trawl aoc of the ones we have lean4 solutions for some nontriviality:
   - meaning a way to beat the dumb way on O()
 
+## Conceptually 3
+- ask llm to generate property tests for apps problems
+- subject corresponding apps solutions to those property tests
+- ask llm to generate sorry'd out lean theorems from property tests
+- output task: original task plus sorry'd out lean theorems.
+
 ## TODO
 - [ ] read dafny benchmark paper
 - [ ] read the APPS easies.
+- [ ] remember that we should show baselines from openai, anthropic, and deepseek, and llama
