@@ -1,5 +1,6 @@
 # test outputs
-test/test_example_func.py
+artefacts/hypothesis/*.py
+artefacts/lean/*.lean
 
 # hypotheses
 .hypothesis/

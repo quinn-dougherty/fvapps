@@ -1,5 +1,5 @@
 [project]
-name = "llmfv"
+name = "fvapps"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
@@ -19,6 +19,9 @@ requires-python = ">= 3.8"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[project.scripts]
+hypothesis_gen = "scripts.example_agent_run:main"
+
 [tool.rye]
 managed = true
 dev-dependencies = [
@@ -32,7 +35,7 @@ dev-dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/llmfv"]
+packages = ["src/benchmark", "src/baselines", "src/scripts"]
 
 [tool.pytest.ini_options]
 pythonpath = [
@@ -40,4 +43,4 @@ pythonpath = [
 ]
 
 [tool.setuptools]
-packages = ["llmfv"]
+packages = ["src/benchmark", "src/baselines", "src/scripts"]
