@@ -135,6 +135,7 @@ class PythonAgent(DebuggingAgent):
 
 
 class LeanAgent(DebuggingAgent):
+    LANGUAGE = "lean"
     SYSTEM_PROMPT = """
     You are a senior Lean 4 developer with expertise in declaring theorems.
     Your task is only to state the theorems based on the property tests given, but not to prove them.
@@ -162,10 +163,6 @@ class LeanAgent(DebuggingAgent):
         return response.startswith("```") and response.endswith("```")
 
     def run_code(self, code: str):
-        # strip the backticks
-        code = code[3:-3]
-        if code.startswith("lean"):
-            code = code[4:]
 
         with open(self.scratchpad, "w") as f:
             f.write(code)
