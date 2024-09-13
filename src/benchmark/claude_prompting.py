@@ -6,7 +6,7 @@ from typing import Any, Callable
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from .utils import extract_code_block
+from benchmark.utils import extract_code_block
 
 load_dotenv()
 ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")  # config
