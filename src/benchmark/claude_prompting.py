@@ -1,17 +1,19 @@
+import subprocess
 from abc import ABC, abstractmethod
+from os import environ, getenv
+from typing import Any, Callable
+
 from anthropic import Anthropic
 from dotenv import load_dotenv
-from os import getenv, environ
-import subprocess
 
 load_dotenv()
 ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")  # config
 
 
 class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
-    SYSTEM_PROMPT = ""
-    FIRST_PROMPT = lambda _: f""
-    CONTINUOUS_PROMPT = lambda _: f""
+    SYSTEM_PROMPT: str
+    FIRST_PROMPT: Callable[[Any, Any], str]
+    CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str]
 
     def __init__(
         self,
@@ -29,7 +31,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
         self.input = input
         self.scratchpad = scratchpad
-        self.conversation = []
+        self.conversation: list = []
 
     def send_appended_user_message(self, message: str):
         self.conversation.append({"role": "user", "content": message})
@@ -90,17 +92,17 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
 class PythonAgent(DebuggingAgent):
     SYSTEM_PROMPT = """
-    You are a senior Python developer with expertise in generating property tests. You excel at 
+    You are a senior Python developer with expertise in generating property tests. You excel at
     completely covering edge cases and possible inputs using pytest and hypothesis. Do not comment on the problem
     or the code itself, only generate code that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """
 
-    FIRST_PROMPT = (
+    FIRST_PROMPT: Callable[[Any, Any], str] = (
         lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
     )
 
-    CONTINUOUS_PROMPT = (
+    CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str] = (
         lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
     Please fix your original output, again only generating code within the 3 backticks."""
     )
