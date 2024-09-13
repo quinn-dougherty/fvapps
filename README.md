@@ -40,4 +40,4 @@ challenging LLMs to write dependently typed _and_ formally verified code
 ## TODO
 - [ ] read dafny benchmark paper
 - [ ] read the APPS easies.
-- [ ] remember that we should show baselines from openai, anthropic, and deepseek
+- [ ] remember that we should show baselines from openai, anthropic, and deepseek, and llama
