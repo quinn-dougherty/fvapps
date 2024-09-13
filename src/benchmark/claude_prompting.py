@@ -1,11 +1,16 @@
 from abc import ABC, abstractmethod
 from anthropic import Anthropic
 from dotenv import load_dotenv
-from os import getenv, environ
+import os
+import shutil
 import subprocess
 
 load_dotenv()
-ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")  # config
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
+
+lean_exe = shutil.which("lean")
+env = os.environ.copy()
+env["PATH"] = f"{os.path.dirname(os.path.abspath('lean'))}:{env.get('PATH', '')}"
 
 
 class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
@@ -15,9 +20,9 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
     def __init__(
         self,
-        input: str,
+        inp: str,
         scratchpad: str,
-        model_name: str = "claude-3-opus-20240229",  # TODO: make cli arg
+        model_name: str = "claude-3-5-sonnet-20240620",  # TODO: make cli arg
         max_tokens_per_message: int = 512,
         max_iterations: int = 2,  # TODO: make cli arg
     ):
@@ -27,7 +32,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        self.input = input
+        self.inp = inp
         self.scratchpad = scratchpad
         self.conversation = []
 
@@ -60,7 +65,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
     def loop_until_condition(self):
 
         # run the first pass and get some code
-        response = self.send_appended_user_message(self.FIRST_PROMPT(self.input))  # type: ignore
+        response = self.send_appended_user_message(self.FIRST_PROMPT(self.inp))  # type: ignore
         self.conversation.append({"role": "assistant", "content": response})
 
         returncode = 1
@@ -90,9 +95,9 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
 class PythonAgent(DebuggingAgent):
     SYSTEM_PROMPT = """
-    You are a senior Python developer with expertise in generating property tests. You excel at 
-    completely covering edge cases and possible inputs using pytest and hypothesis. Do not comment on the problem
-    or the code itself, only generate code that can be directly exported into a file and ran.
+    You are a senior Python developer with expertise in generating property tests.
+    You excel at completely covering edge cases and possible inputs using pytest and hypothesis, without any Mathlib. Do not rely on importing Mathlib
+    Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """
 
@@ -119,7 +124,7 @@ class PythonAgent(DebuggingAgent):
             f.write(code)
 
         result = subprocess.run(
-            ["pytest", self.scratchpad], capture_output=True, text=True, env=environ
+            ["pytest", self.scratchpad], capture_output=True, text=True, env=os.environ
         )
 
         return result.stdout, result.stderr, result.returncode
@@ -129,4 +134,45 @@ class PythonAgent(DebuggingAgent):
 
 
 class LeanAgent(DebuggingAgent):
-    pass
+    SYSTEM_PROMPT = """
+    You are a senior Lean 4 developer with expertise in declaring theorems.
+    Your task is only to state the theorems based on the property tests given, but not to prove them.
+    Instead, ensure the lean typechecker is happy by writing "sorry".
+    If needed, declare the function signature and "sorry" its definition.
+    Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
+    Start your generation with 3 backticks, and end it with 3 backticks.
+    """
+    FIRST_PROMPT = lambda _, x: f"""Please write theorems for this function:\n\n{x}"""
+    CONTINUOUS_PROMPT = (
+        lambda _, stdout, stderr: f"""
+        Running the code produced the following output:
+
+        Standard out:\n{stdout}
+
+        Standard error:\n{stderr}
+
+        Please fix your original output, again only generating code within the 3 backticks.
+        """
+    )
+
+    def verify_output_type(self, response: str):
+        """Check that the model output is only code by looking for the backticks at the start and end."""
+        return response.startswith("```") and response.endswith("```")
+
+    def run_code(self, code: str):
+        # strip the backticks
+        code = code[3:-3]
+        if code.startswith("lean"):
+            code = code[4:]
+
+        with open(self.scratchpad, "w") as f:
+            f.write(code)
+
+        result = subprocess.run(
+            ["lean", self.scratchpad], capture_output=True, text=True, env=os.environ
+        )
+
+        return result.stdout, result.stderr, result.returncode
+
+    def stopping_condition(self, returncode: int):
+        return returncode == 0
