@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from anthropic import Anthropic
 from dotenv import load_dotenv
-from os import getenv
+from os import getenv, environ
 import subprocess
 
 load_dotenv()
-ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")
+ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")  # config
 
-class DebuggingAgent(ABC):
+
+class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
     SYSTEM_PROMPT = ""
     FIRST_PROMPT = lambda _: f""
     CONTINUOUS_PROMPT = lambda _: f""
@@ -16,9 +17,9 @@ class DebuggingAgent(ABC):
         self,
         input: str,
         scratchpad: str,
-        model_name: str = "claude-3-opus-20240229",
+        model_name: str = "claude-3-opus-20240229",  # TODO: make cli arg
         max_tokens_per_message: int = 512,
-        max_iterations: int = 5,
+        max_iterations: int = 2,  # TODO: make cli arg
     ):
         self.model_name = model_name
         self.max_tokens_per_message = max_tokens_per_message
@@ -40,14 +41,14 @@ class DebuggingAgent(ABC):
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
-    
+
     def query_base_case(self, function: str):
         return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
 
     @abstractmethod
     def verify_output_type(self, response: str) -> bool:
         pass
-    
+
     @abstractmethod
     def run_code(self, code: str) -> tuple:
         pass
@@ -57,7 +58,7 @@ class DebuggingAgent(ABC):
         pass
 
     def loop_until_condition(self):
-        
+
         # run the first pass and get some code
         response = self.send_appended_user_message(self.FIRST_PROMPT(self.input))  # type: ignore
         self.conversation.append({"role": "assistant", "content": response})
@@ -72,7 +73,7 @@ class DebuggingAgent(ABC):
             if not self.verify_output_type(response):
                 print(response)
                 raise ValueError("The output from the model is not code.")
-            
+
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(response)
 
@@ -82,7 +83,7 @@ class DebuggingAgent(ABC):
             self.conversation.append({"role": "assistant", "content": response})
 
         return
-    
+
     def dump_full_chat_history(self):
         return self.conversation
 
@@ -95,10 +96,14 @@ class PythonAgent(DebuggingAgent):
     Start your generation with 3 backticks, and end it with 3 backticks.
     """
 
-    FIRST_PROMPT = lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
+    FIRST_PROMPT = (
+        lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
+    )
 
-    CONTINUOUS_PROMPT = lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
+    CONTINUOUS_PROMPT = (
+        lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
     Please fix your original output, again only generating code within the 3 backticks."""
+    )
 
     def verify_output_type(self, response: str):
         """Check that the model output is only code by looking for the backticks at the start and end."""
@@ -114,15 +119,14 @@ class PythonAgent(DebuggingAgent):
             f.write(code)
 
         result = subprocess.run(
-            ["pytest", self.scratchpad],
-            capture_output=True,
-            text=True
+            ["pytest", self.scratchpad], capture_output=True, text=True, env=environ
         )
 
         return result.stdout, result.stderr, result.returncode
 
     def stopping_condition(self, returncode: int):
         return returncode == 0
+
 
 class LeanAgent(DebuggingAgent):
     pass
