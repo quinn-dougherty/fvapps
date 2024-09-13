@@ -1,7 +1,7 @@
 import re
 
 
-def extract_single_backticks(text) -> str | None:
+def extract_single_backticks(text: str) -> str | None:
     pattern = r"```(.*?)```"
     match = re.search(pattern, text, re.DOTALL)
     return match.group(1) if match else None
