@@ -6,11 +6,14 @@ from typing import Any, Callable
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
+from .utils import extract_code_block
+
 load_dotenv()
 ANTHROPIC_API_KEY = getenv("ANTHROPIC_API_KEY")  # config
 
 
 class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
+    LANGUAGE: str
     SYSTEM_PROMPT: str
     FIRST_PROMPT: Callable[[Any, Any], str]
     CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str]
@@ -59,6 +62,9 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
     def stopping_condition(self, *args, **kwargs) -> bool:
         pass
 
+    def extract_code(self, response: str):
+        return extract_code_block(response, language=self.LANGUAGE)
+
     def loop_until_condition(self):
 
         # run the first pass and get some code
@@ -77,7 +83,8 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
                 raise ValueError("The output from the model is not code.")
 
             # subprocess call to run it and track outputs and exit codes
-            stdout, stderr, returncode = self.run_code(response)
+            code = self.extract_code(response)
+            stdout, stderr, returncode = self.run_code(code)
 
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
@@ -91,10 +98,11 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
 
 class PythonAgent(DebuggingAgent):
+    LANGUAGE = "python"
     SYSTEM_PROMPT = """
     You are a senior Python developer with expertise in generating property tests. You excel at
-    completely covering edge cases and possible inputs using pytest and hypothesis. Do not comment on the problem
-    or the code itself, only generate code that can be directly exported into a file and ran.
+    completely covering edge cases and possible inputs using pytest and hypothesis. Be as concise as possible,
+    only generating code with no surrounding commentary that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """
 
@@ -112,10 +120,6 @@ class PythonAgent(DebuggingAgent):
         return response.startswith("```") and response.endswith("```")
 
     def run_code(self, code: str):
-        # strip the backticks
-        code = code[3:-3]
-        if code.startswith("python"):
-            code = code[6:]
 
         with open(self.scratchpad, "w") as f:
             f.write(code)
