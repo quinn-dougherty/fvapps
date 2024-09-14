@@ -1,0 +1,8 @@
+[python]
+model_name = "claude-3-5-sonnet-20240620"
+max_tokens_per_completion = 1024
+max_iterations = 4
+[lean]
+model_name = "claude-3-5-sonnet-20240620"
+max_tokens_per_completion = 1024
+max_iterations = 4

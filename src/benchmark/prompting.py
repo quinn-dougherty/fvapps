@@ -2,8 +2,8 @@ import os
 import shutil
 import subprocess
 from abc import ABC, abstractmethod
-from os import environ, getenv
 from typing import Any, Callable
+from dataclasses import dataclass
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -13,9 +13,17 @@ from benchmark.utils import extract_code_block
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
+# TODO: this isn't helping and is only a problem on quinn's machine
 lean_exe = shutil.which("lean")
 env = os.environ.copy()
 env["PATH"] = f"{os.path.dirname(os.path.abspath('lean'))}:{env.get('PATH', '')}"
+
+
+@dataclass
+class AgentConfig:
+    model_name: str
+    max_tokens_per_completion: int
+    max_iterations: int
 
 
 class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
@@ -24,22 +32,15 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
     FIRST_PROMPT: Callable[[Any, Any], str]
     CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str]
 
-    def __init__(
-        self,
-        inp: str,
-        scratchpad: str,
-        model_name: str = "claude-3-5-sonnet-20240620",  # TODO: make cli arg
-        max_tokens_per_message: int = 1024,
-        max_iterations: int = 5,  # TODO: make cli arg
-    ):
-        self.model_name = model_name
-        self.max_tokens_per_message = max_tokens_per_message
-        self.max_iterations = max_iterations
+    def __init__(self, inp: str, out: str, config: AgentConfig):
+        self.model_name = config.model_name
+        self.max_tokens_per_completion = config.max_tokens_per_completion
+        self.max_iterations = config.max_iterations
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
         self.inp = inp
-        self.scratchpad = scratchpad
+        self.out = out
         self.conversation: list = []
 
     def send_appended_user_message(self, message: str):
@@ -47,7 +48,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
         response = self.client.messages.create(
             model=self.model_name,
-            max_tokens=self.max_tokens_per_message,
+            max_tokens=self.max_tokens_per_completion,
             system=self.SYSTEM_PROMPT,
             messages=self.conversation,
         )
@@ -120,11 +121,11 @@ class PythonAgent(DebuggingAgent):
 
     def run_code(self, code: str):
 
-        with open(self.scratchpad, "w") as f:
+        with open(self.out, "w") as f:
             f.write(code)
 
         result = subprocess.run(
-            ["pytest", self.scratchpad], capture_output=True, text=True, env=os.environ
+            ["pytest", self.out], capture_output=True, text=True, env=os.environ
         )
 
         return result.stdout, result.stderr, result.returncode
@@ -163,11 +164,11 @@ class LeanAgent(DebuggingAgent):
 
     def run_code(self, code: str):
 
-        with open(self.scratchpad, "w") as f:
+        with open(self.out, "w") as f:
             f.write(code)
 
         result = subprocess.run(
-            ["lean", self.scratchpad], capture_output=True, text=True, env=os.environ
+            ["lean", self.out], capture_output=True, text=True, env=os.environ
         )
 
         return result.stdout, result.stderr, result.returncode
