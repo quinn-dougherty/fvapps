@@ -32,9 +32,6 @@ dev-dependencies = [
     "hypothesis>=6.112.0",
 ]
 
-[tool.rye.scripts]
-lean_gen_test_2 = "python src/scripts/example_agent_run.py"
-
 [tool.hatch.metadata]
 allow-direct-references = true
 
@@ -42,8 +39,8 @@ allow-direct-references = true
 packages = ["src/benchmark", "src/baselines", "src/scripts"]
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "."
+testpaths = [
+  "test"
 ]
 
 [tool.setuptools]
