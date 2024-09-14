@@ -19,11 +19,7 @@ def python_main():
     agent = PythonAgent(
         inp=content,
         out=str(examples / f"test_{EXAMPLE}.py"),
-        config=AgentConfig(
-            model_name=cfg["model_name_python"],
-            max_tokens_per_completion=cfg["max_tokens_per_completion_python"],
-            max_iterations=cfg["max_iterations_python"],
-        ),
+        config=AgentConfig(**cfg["python"]),
     )
     final_exit_code = agent.loop_until_condition()
 
@@ -38,13 +34,7 @@ def lean_main():
         content = f.read()
 
     agent = LeanAgent(
-        inp=content,
-        out=str(examples / "Spec.lean"),
-        config=AgentConfig(
-            model_name=cfg["model_name_lean"],
-            max_tokens_per_completion=cfg["max_tokens_per_completion_lean"],
-            max_iterations=cfg["max_iterations_lean"],
-        ),
+        inp=content, out=str(examples / "Spec.lean"), config=AgentConfig(**cfg["lean"])
     )
     final_exit_code = agent.loop_until_condition()
 
