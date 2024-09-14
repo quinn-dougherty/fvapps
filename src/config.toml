@@ -1,0 +1,6 @@
+model_name_python = "claude-3-5-sonnet-20240620"
+model_name_lean = "claude-3-5-sonnet-20240620"
+max_tokens_per_completion_python = 1024
+max_tokens_per_completion_lean = 1024
+max_iterations_python = 4
+max_iterations_lean = 4
