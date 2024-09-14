@@ -1,6 +1,7 @@
 # test outputs
 artefacts/hypothesis/*.py
 artefacts/lean/*.lean
+artefacts/apps/*
 
 # hypotheses
 .hypothesis/
