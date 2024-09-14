@@ -39,8 +39,8 @@ allow-direct-references = true
 packages = ["src/benchmark", "src/baselines", "src/scripts"]
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "."
+testpaths = [
+  "test"
 ]
 
 [tool.setuptools]
