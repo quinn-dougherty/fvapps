@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from abc import ABC, abstractmethod
+from typing import Any, Callable, Union, Literal
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -13,29 +14,28 @@ from benchmark.utils import extract_code_block
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
-# TODO: this isn't helping and is only a problem on quinn's machine
-lean_exe = shutil.which("lean")
-env = os.environ.copy()
-env["PATH"] = f"{os.path.dirname(os.path.abspath('lean'))}:{env.get('PATH', '')}"
-
 
 @dataclass
 class AgentConfig:
     model_name: str
     max_tokens_per_completion: int
     max_iterations: int
+    language: Union[Literal["python"], Literal["lean"]]
+    system_prompt: Callable[[Any], str]
+    first_prompt: Callable[[Any], str]
+    continuous_prompt: Callable[[Any, Any], str]
 
 
 class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
-    LANGUAGE: str
-    SYSTEM_PROMPT: str
-    FIRST_PROMPT: Callable[..., str]
-    CONTINUOUS_PROMPT: Callable[..., str]
 
     def __init__(self, inp: str, out: str, config: AgentConfig):
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
+        self.language = config.language
+        self.system_prompt = config.system_prompt
+        self.first_prompt = config.first_prompt
+        self.continuous_prompt = config.continuous_prompt
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -43,13 +43,23 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         self.out = out
         self.conversation: list = []
 
-    def send_appended_user_message(self, message: str):
-        self.conversation.append({"role": "user", "content": message})
+    def append_user_message(self, message: str):
+        entry = {"role": "user", "content": message}
+        self.conversation.append(entry)
 
+    def append_assistant_message(self, response: str):
+        entry = {"role": "assistant", "content": response}
+        self.conversation.append(entry)
+
+    def send_appended_user_message(self, message: str, cache: bool = False):
+        self.append_user_message(message)
+        sysprompt = {"type": "text", "text": self.system_prompt("")}
+        if cache:
+            sysprompt["cache-control"] = "ephemeral"
         response = self.client.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
-            system=self.SYSTEM_PROMPT,
+            system=[sysprompt],
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
@@ -58,23 +68,18 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
 
     @abstractmethod
-    def run_code(self, code: str) -> tuple:
-        pass
-
-    @abstractmethod
-    def stopping_condition(self, *args, **kwargs) -> bool:
+    def run_code(self, code: str) -> tuple[str, str, int]:
         pass
 
     def extract_code(self, response: str):
-        return extract_code_block(response, language=self.LANGUAGE)
+        return extract_code_block(response, language=self.language)
 
     def loop_until_condition(self) -> bool:
 
         print(f"Loop 1/{self.max_iterations}")
         # run the first pass and get some code
-        response = self.send_appended_user_message(self.FIRST_PROMPT(self.inp))  # type: ignore
+        response = self.send_appended_user_message(self.first_prompt(self.inp))  # type: ignore
         self.conversation.append({"role": "assistant", "content": response})
-        # breakpoint()
         code = self.extract_code(response)
 
         # subprocess call to run it and track outputs and exit codes
@@ -87,9 +92,8 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
-            response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
-            # breakpoint()
-            self.conversation.append({"role": "assistant", "content": response})
+            response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
+            self.append_assistant_message(response)
             code = self.extract_code(response)
 
             # subprocess call to run it and track outputs and exit codes
@@ -100,26 +104,12 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
     def dump_full_chat_history(self):
         return self.conversation
 
+    def stopping_condition(self, returncode: int) -> bool:
+        return returncode == 0
+
 
 class PythonAgent(DebuggingAgent):
-    LANGUAGE = "python"
-    SYSTEM_PROMPT = """
-    You are a senior Python developer with expertise in generating property tests. You excel at
-    completely covering edge cases and possible inputs using pytest and hypothesis. Be as concise as possible,
-    only generating code with no surrounding commentary that can be directly exported into a file and ran.
-    Start your generation with 3 backticks, and end it with 3 backticks.
-    """
-
-    FIRST_PROMPT: Callable[[Any, Any], str] = (
-        lambda _, x: f"""Please write property tests for this function:\n\n{x}"""
-    )
-
-    CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str] = (
-        lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
-    Please fix your original output, again only generating code within the 3 backticks."""
-    )
-
-    def run_code(self, code: str):
+    def run_code(self, code: str) -> tuple[str, str, int]:
 
         with open(self.out, "w") as f:
             f.write(code)
@@ -130,41 +120,9 @@ class PythonAgent(DebuggingAgent):
 
         return result.stdout, result.stderr, result.returncode
 
-    def stopping_condition(self, returncode: int):
-        return returncode == 0
-
 
 class LeanAgent(DebuggingAgent):
-    LANGUAGE = "lean"
-    SYSTEM_PROMPT = """
-    You are a senior Lean 4 developer with expertise in declaring theorems.
-    Your task is only to state the theorems based on the property tests given, but not to prove them.
-    Instead, ensure the lean typechecker is happy by writing "sorry".
-    Do not import Mathlib.
-    If needed, declare the function signature and "sorry" its definition.
-    Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
-    Start your generation with 3 backticks, and end it with 3 backticks.
-    """
-    FIRST_PROMPT = (
-        lambda _, x: f"""Please convert these property tests to theorems:\n\n{x}"""
-    )
-    CONTINUOUS_PROMPT = (
-        lambda _, stdout, stderr: f"""
-        Running the code produced the following output:
-
-        Standard out:\n{stdout}
-
-        Standard error:\n{stderr}
-
-        Please fix your original output, again only generating code within the 3 backticks.
-        """
-    )
-
-    def verify_output_type(self, response: str):
-        """Check that the model output is only code by looking for the backticks at the start and end."""
-        return response.startswith("```") and response.endswith("```")
-
-    def run_code(self, code: str):
+    def run_code(self, code: str) -> tuple[str, str, int]:
 
         with open(self.out, "w") as f:
             f.write(code)
@@ -174,6 +132,3 @@ class LeanAgent(DebuggingAgent):
         )
 
         return result.stdout, result.stderr, result.returncode
-
-    def stopping_condition(self, returncode: int):
-        return returncode == 0

@@ -1,4 +1,5 @@
 from benchmark.prompting import PythonAgent, LeanAgent, AgentConfig
+from scripts.config import lean, python
 import tomllib
 import pathlib
 
@@ -19,7 +20,7 @@ def python_main():
     agent = PythonAgent(
         inp=content,
         out=str(examples / f"test_{EXAMPLE}.py"),
-        config=AgentConfig(**cfg["python"]),
+        config=AgentConfig(**cfg["python"], **python),
     )
     final_exit_code = agent.loop_until_condition()
 
@@ -34,7 +35,9 @@ def lean_main():
         content = f.read()
 
     agent = LeanAgent(
-        inp=content, out=str(examples / "Spec.lean"), config=AgentConfig(**cfg["lean"])
+        inp=content,
+        out=str(examples / "Spec.lean"),
+        config=AgentConfig(**cfg["lean"], **lean),
     )
     final_exit_code = agent.loop_until_condition()
 
