@@ -13,11 +13,6 @@ from benchmark.utils import extract_code_block
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
-# TODO: this isn't helping and is only a problem on quinn's machine
-lean_exe = shutil.which("lean")
-env = os.environ.copy()
-env["PATH"] = f"{os.path.dirname(os.path.abspath('lean'))}:{env.get('PATH', '')}"
-
 
 @dataclass
 class AgentConfig:
@@ -26,7 +21,7 @@ class AgentConfig:
     max_iterations: int
 
 
-class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
+class DebuggingAgent(ABC):
     LANGUAGE: str
     SYSTEM_PROMPT: str
     FIRST_PROMPT: Callable[[Any, Any], str]
@@ -43,9 +38,16 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         self.out = out
         self.conversation: list = []
 
-    def send_appended_user_message(self, message: str):
-        self.conversation.append({"role": "user", "content": message})
+    def append_user_message(self, message: str):
+        entry = {"role": "user", "content": message}
+        self.conversation.append(entry)
 
+    def append_assistant_message(self, response: str):
+        entry = {"role": "assistant", "content": response}
+        self.conversation.append(entry)
+
+    def send_appended_user_message(self, message: str):
+        self.append_user_message(message)
         response = self.client.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
@@ -58,11 +60,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
 
     @abstractmethod
-    def run_code(self, code: str) -> tuple:
-        pass
-
-    @abstractmethod
-    def stopping_condition(self, *args, **kwargs) -> bool:
+    def run_code(self, code: str) -> tuple[str, str, int]:
         pass
 
     def extract_code(self, response: str):
@@ -74,7 +72,6 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         # run the first pass and get some code
         response = self.send_appended_user_message(self.FIRST_PROMPT(self.inp))  # type: ignore
         self.conversation.append({"role": "assistant", "content": response})
-        # breakpoint()
         code = self.extract_code(response)
 
         # subprocess call to run it and track outputs and exit codes
@@ -88,8 +85,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
-            # breakpoint()
-            self.conversation.append({"role": "assistant", "content": response})
+            self.append_assistant_message(response)
             code = self.extract_code(response)
 
             # subprocess call to run it and track outputs and exit codes
@@ -99,6 +95,9 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
     def dump_full_chat_history(self):
         return self.conversation
+
+    def stopping_condition(self, returncode: int) -> bool:
+        return returncode == 0
 
 
 class PythonAgent(DebuggingAgent):
@@ -119,7 +118,7 @@ class PythonAgent(DebuggingAgent):
     Please fix your original output, again only generating code within the 3 backticks."""
     )
 
-    def run_code(self, code: str):
+    def run_code(self, code: str) -> tuple[str, str, int]:
 
         with open(self.out, "w") as f:
             f.write(code)
@@ -129,9 +128,6 @@ class PythonAgent(DebuggingAgent):
         )
 
         return result.stdout, result.stderr, result.returncode
-
-    def stopping_condition(self, returncode: int):
-        return returncode == 0
 
 
 class LeanAgent(DebuggingAgent):
@@ -164,7 +160,7 @@ class LeanAgent(DebuggingAgent):
         """Check that the model output is only code by looking for the backticks at the start and end."""
         return response.startswith("```") and response.endswith("```")
 
-    def run_code(self, code: str):
+    def run_code(self, code: str) -> tuple[str, str, int]:
 
         with open(self.out, "w") as f:
             f.write(code)
@@ -174,6 +170,3 @@ class LeanAgent(DebuggingAgent):
         )
 
         return result.stdout, result.stderr, result.returncode
-
-    def stopping_condition(self, returncode: int):
-        return returncode == 0
