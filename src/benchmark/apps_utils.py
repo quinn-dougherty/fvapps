@@ -4,9 +4,15 @@ from ast import literal_eval
 from pathlib import Path
 from typing import Any, Callable
 
+from anthropic import Anthropic
 from datasets import Dataset, load_dataset  # type: ignore
+from dotenv import load_dotenv
 
-from benchmark.prompting import DebuggingAgent
+from benchmark.prompting import AgentConfig
+from benchmark.utils import extract_code_block
+
+load_dotenv()
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
 HF_DATASET_PATH = "codeparrot/apps"
 
@@ -75,7 +81,7 @@ def write_solution_to_file(ds: Dataset, split: str, index: int, root_path: Path)
     dump_solution_to_file(solution, problem_path / "python_solution.py")
 
 
-class AppsPreprocAgent(DebuggingAgent):
+class AppsPreprocAgent:
     LANGUAGE = "python"
     SYSTEM_PROMPT = """
     You are a senior Python developer with expertise in formatting code. Be as concise as possible,
@@ -96,6 +102,18 @@ class AppsPreprocAgent(DebuggingAgent):
     Please fix your original output, again only generating code within the 3 backticks."""
     )
 
+    def __init__(self, inp: dict, out: str, config: AgentConfig):
+
+        self.model_name = config.model_name
+        self.max_tokens_per_completion = config.max_tokens_per_completion
+        self.max_iterations = config.max_iterations
+
+        self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+        self.inp = inp
+        self.out = out
+        self.conversation: list = []
+
     def run_code(self, code: str):
 
         with open(self.out, "w") as f:
@@ -110,14 +128,63 @@ class AppsPreprocAgent(DebuggingAgent):
     def stopping_condition(self, returncode: int):
         return returncode == 0
 
+    def send_appended_user_message(self, message: str):
+        self.conversation.append({"role": "user", "content": message})
+
+        response = self.client.messages.create(
+            model=self.model_name,
+            max_tokens=self.max_tokens_per_completion,
+            system=self.SYSTEM_PROMPT,
+            messages=self.conversation,
+        )
+        return response.content[0].text  # type: ignore
+
+    def query_base_case(self, function: str):
+        return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
+
+    def extract_code(self, response: str):
+        return extract_code_block(response, language=self.LANGUAGE)
+
+    def format_first_prompt(self, apps_succinct_rowdict: dict) -> str:
+        return self.FIRST_PROMPT(
+            apps_succinct_rowdict["problem_statement"],
+            apps_succinct_rowdict["solution"],
+            apps_succinct_rowdict["test_cases"],
+        )
+
+    def loop_until_condition(self) -> bool:
+
+        print(f"Loop 1/{self.max_iterations}")
+        # run the first pass and get some code
+        response = self.send_appended_user_message(self.format_first_prompt(self.inp))  # type: ignore
+        self.conversation.append({"role": "assistant", "content": response})
+        # breakpoint()
+        code = self.extract_code(response)
+
+        # subprocess call to run it and track outputs and exit codes
+        stdout, stderr, returncode = self.run_code(code)
+
+        loops = 1
+        while not self.stopping_condition(returncode) and loops < self.max_iterations:
+            loops += 1
+            print(f"Loop {loops}/{self.max_iterations}")
+
+            # if not done, append the response to the conversation and get a new response
+            # with secondary prompt scaffold
+            response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
+            # breakpoint()
+            self.conversation.append({"role": "assistant", "content": response})
+            code = self.extract_code(response)
+
+            # subprocess call to run it and track outputs and exit codes
+            stdout, stderr, returncode = self.run_code(code)
+
+        return self.stopping_condition(returncode)
+
+    def dump_full_chat_history(self):
+        return self.conversation
+
 
 if __name__ == "__main__":
     ds = load_hf_apps_dataset()
     setup_apps_directories(Path("."))
-
-    # for split in ["train", "test"]:
-    #     for i, row in enumerate(ds[split]):
-    #         construct_apps_paths(row, split)
-    #         solution = get_single_apps_solution(ds, i)
-    #         dump_solution_to_file(solution, Path(f"artefacts/apps/{split}/{row['problem_id']}/hypothesis/solution.py"))
-    #         dump_solution_to_file(solution, Path(f"artefacts/apps/{split}/{row['problem_id']}/lean/solution.lean"))
