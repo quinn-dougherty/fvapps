@@ -145,7 +145,9 @@ class LeanAgent(DebuggingAgent):
     Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """
-    FIRST_PROMPT = lambda _, x: f"""Please write theorems for this function:\n\n{x}"""
+    FIRST_PROMPT = (
+        lambda _, x: f"""Please convert these property tests to theorems:\n\n{x}"""
+    )
     CONTINUOUS_PROMPT = (
         lambda _, stdout, stderr: f"""
         Running the code produced the following output:
