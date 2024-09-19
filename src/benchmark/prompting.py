@@ -50,12 +50,15 @@ class DebuggingAgent(ABC):
         entry = {"role": "assistant", "content": response}
         self.conversation.append(entry)
 
-    def send_appended_user_message(self, message: str):
+    def send_appended_user_message(self, message: str, cache: bool = False):
         self.append_user_message(message)
+        sysprompt = {"type": "text", "text": self.system_prompt("")}
+        if cache:
+            sysprompt["cache-control"] = "ephemeral"
         response = self.client.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
-            system=self.system_prompt(""),
+            system=[sysprompt],
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
