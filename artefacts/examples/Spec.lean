@@ -1,50 +1,35 @@
-dslkjf
-def maxChar (message : String) : Char :=
-  sorry
+def max_char (message : String) : Char := sorry
 
-theorem maxChar_in_string (message : String) (h : message ≠ "") :
-  maxChar message ∈ message.data :=
-  sorry
+theorem max_char_in_string (s : String) (h : s.length > 0) :
+  (∃ c, c ∈ s.data ∧ max_char s = c) ∧
+  (∀ c ∈ s.data, s.data.count (max_char s) ≥ s.data.count c) := sorry
 
-theorem maxChar_max_count (message : String) (h : message ≠ "") :
-  ∀ c ∈ message.data, message.data.count (maxChar message) ≥ message.data.count c :=
-  sorry
+theorem max_char_consistent (s : String) (h : s.length > 0) :
+  max_char s = max_char s := sorry
 
-theorem maxChar_singleton (c : Char) :
-  maxChar (String.mk [c]) = c :=
-  sorry
+theorem max_char_concatenation (s1 s2 : String) (h1 : s1.length > 0) (h2 : s2.length > 0) :
+  (max_char (s1 ++ s2) ∈ s1.data ∨ max_char (s1 ++ s2) ∈ s2.data) ∧
+  ((s1.data.count (max_char (s1 ++ s2))) + (s2.data.count (max_char (s1 ++ s2))) =
+   (s1 ++ s2).data.foldl (λ acc c => max acc ((s1.data.count c) + (s2.data.count c))) 0) := sorry
 
-theorem maxChar_empty_string :
-  ∀ (e : String), e = "" → (maxChar e : Option Char) = none :=
-  sorry
+theorem max_char_reverse (s : String) (h : s.length > 0) :
+  s.data.count (max_char s) = s.data.reverse.count (max_char (String.mk s.data.reverse)) := sorry
 
-theorem maxChar_lowercase (message : String) (h : message ≠ "") (h2 : ∀ c ∈ message.data, c.isLower) :
-  (maxChar message).isLower :=
-  sorry
+theorem max_char_specific_cases :
+  (max_char "aaa" = 'a') ∧
+  (max_char "abcabc" = 'a') ∧
+  (max_char " " = ' ') := sorry
 
-theorem maxChar_uppercase (message : String) (h : message ≠ "") (h2 : ∀ c ∈ message.data, c.isUpper) :
-  (maxChar message).isUpper :=
-  sorry
+theorem max_char_empty_string_error :
+  (∀ s : String, s.length = 0 → max_char s = default) := sorry
 
-theorem maxChar_digits (message : String) (h : message ≠ "") (h2 : ∀ c ∈ message.data, c.isDigit) :
-  (maxChar message).isDigit :=
-  sorry
+theorem max_char_lowercase (s : String) (h : s.length > 0) 
+  (h_lowercase : ∀ c ∈ s.data, c.isLower) :
+  (max_char s).isLower := sorry
 
-theorem maxChar_punctuation (message : String) (h : message ≠ "") (h2 : ∀ c ∈ message.data, c.isAlphanum = false) :
-  (maxChar message).isAlphanum = false :=
-  sorry
+theorem max_char_digits (s : String) (h : s.length > 0)
+  (h_digits : ∀ c ∈ s.data, c.isDigit) :
+  (max_char s).isDigit := sorry
 
-theorem maxChar_repeated_char (s : String) (c : Char) (h : s ≠ "") :
-  maxChar (s ++ String.mk (List.replicate (s.length + 1) c)) = c :=
-  sorry
-
-theorem maxChar_tie_breaker (message : String) (h : message ≠ "") :
-  ∀ c ∈ message.data, message.data.count c = message.data.count (maxChar message) →
-    message.data.indexOf c ≥ message.data.indexOf (maxChar message) :=
-  sorry
-
-theorem maxChar_first_occurrence (message : String) (h : message.length ≥ 2) :
-  ∀ c ∈ message.data, c ≠ maxChar message →
-    message.data.count c = message.data.count (maxChar message) →
-    message.data.indexOf c > message.data.indexOf (maxChar message) :=
-  sorry
+theorem max_char_not_unique (s : String) (h : s.length > 1) :
+  s.data.count (max_char s) > 1 ∨ s.data.eraseDups.length = s.length := sorry
