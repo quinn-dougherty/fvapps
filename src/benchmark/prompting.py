@@ -4,6 +4,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Union, Literal
 from dataclasses import dataclass
+from typing import Any, Callable
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -25,7 +26,7 @@ class AgentConfig:
     continuous_prompt: Callable[[Any, Any], str]
 
 
-class DebuggingAgent(ABC):
+class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
 
     def __init__(self, inp: str, out: str, config: AgentConfig):
         self.model_name = config.model_name
