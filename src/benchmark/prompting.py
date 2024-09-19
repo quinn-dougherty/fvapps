@@ -4,7 +4,6 @@ import subprocess
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Union, Literal
 from dataclasses import dataclass
-from typing import Any, Callable
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -21,12 +20,12 @@ class AgentConfig:
     max_tokens_per_completion: int
     max_iterations: int
     language: Union[Literal["python"], Literal["lean"]]
-    system_prompt: Callable[[Any], str]
-    first_prompt: Callable[[Any], str]
-    continuous_prompt: Callable[[Any, Any], str]
+    system_prompt: Callable[..., str]
+    first_prompt: Callable[..., str]
+    continuous_prompt: Callable[..., str]
 
 
-class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
+class DebuggingAgent(ABC):
 
     def __init__(self, inp: str, out: str, config: AgentConfig):
         self.model_name = config.model_name
@@ -56,7 +55,7 @@ class DebuggingAgent(ABC):  # TODO: put in `agent/abc.py`
         sysprompt = {"type": "text", "text": self.system_prompt("")}
         if cache:
             sysprompt["cache-control"] = "ephemeral"
-        response = self.client.messages.create(
+        response = self.client.beta.prompt_caching.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
             system=[sysprompt],

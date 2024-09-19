@@ -82,31 +82,15 @@ def write_solution_to_file(ds: Dataset, split: str, index: int, root_path: Path)
 
 
 class AppsPreprocAgent:
-    LANGUAGE = "python"
-    SYSTEM_PROMPT = """
-    You are a senior Python developer with expertise in formatting code. Be as concise as possible,
-    only generating code with no surrounding commentary that can be directly exported into a file and ran.
-    Start your generation with 3 backticks, and end it with 3 backticks.
-    """
-
-    FIRST_PROMPT = (
-        lambda _, x, y, z: f"""Here is a coding problem statement, a proposed solution, and some test cases formatted
-        with newlines for calls to input(). Please rewrite the solution as standalone python file that has a single function
-        which takes inputs as defined by the problem, implements the same solution, and returns
-        the correct type of output. The file should be runnable, with the main() function running the test cases
-        and asserting that they are correct.\n\nProblem Statement:\n{x}\n\nProposed Solution:\n{y}\n\nTest Cases:\n{z}"""
-    )
-
-    CONTINUOUS_PROMPT: Callable[[Any, Any, Any], str] = (
-        lambda _, stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
-    Please fix your original output, again only generating code within the 3 backticks."""
-    )
-
     def __init__(self, inp: dict, out: str, config: AgentConfig):
 
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
+        self.language = config.language
+        self.system_prompt = config.system_prompt
+        self.first_prompt = config.first_prompt
+        self.continuous_prompt = config.continuous_prompt
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -134,7 +118,7 @@ class AppsPreprocAgent:
         response = self.client.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
-            system=self.SYSTEM_PROMPT,
+            system=self.system_prompt(""),
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
@@ -143,10 +127,10 @@ class AppsPreprocAgent:
         return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
 
     def extract_code(self, response: str):
-        return extract_code_block(response, language=self.LANGUAGE)
+        return extract_code_block(response, language=self.language)
 
     def format_first_prompt(self, apps_succinct_rowdict: dict) -> str:
-        return self.FIRST_PROMPT(
+        return self.first_prompt(
             apps_succinct_rowdict["problem_statement"],
             apps_succinct_rowdict["solution"],
             apps_succinct_rowdict["test_cases"],
@@ -171,8 +155,7 @@ class AppsPreprocAgent:
 
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
-            response = self.send_appended_user_message(self.CONTINUOUS_PROMPT(stdout, stderr))  # type: ignore
-            # breakpoint()
+            response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
             self.conversation.append({"role": "assistant", "content": response})
             code = self.extract_code(response)
 
@@ -183,8 +166,3 @@ class AppsPreprocAgent:
 
     def dump_full_chat_history(self):
         return self.conversation
-
-
-if __name__ == "__main__":
-    ds = load_hf_apps_dataset()
-    setup_apps_directories(Path("."))

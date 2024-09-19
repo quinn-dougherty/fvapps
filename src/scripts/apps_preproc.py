@@ -1,12 +1,17 @@
 import pathlib
-
+import tomllib
 from benchmark.apps_utils import (
     AppsPreprocAgent,
     construct_apps_paths,
     get_succinct_apps_datarow,
     load_hf_apps_dataset,
+    setup_apps_directories,
 )
 from benchmark.prompting import AgentConfig
+from scripts.config import preproc
+
+with open("src/config.toml", "rb") as f:
+    cfg = tomllib.load(f)
 
 
 def run_AppsPreprocAgent(orig_apps_row, split: str):
@@ -14,11 +19,7 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     # get a sample succint row
     sample = get_succinct_apps_datarow(orig_apps_row)
 
-    config = AgentConfig(
-        model_name="claude-3-5-sonnet-20240620",
-        max_tokens_per_completion=1024,
-        max_iterations=4,
-    )
+    config = AgentConfig(**cfg["preproc"], **preproc)
 
     problem_path = construct_apps_paths(
         root_path=pathlib.Path("."),
@@ -41,7 +42,8 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     return
 
 
-if __name__ == "__main__":
+def main():
     split = "train"
     ds = load_hf_apps_dataset(split=split)
+    setup_apps_directories(pathlib.Path("."))
     run_AppsPreprocAgent(ds[0], split=split)
