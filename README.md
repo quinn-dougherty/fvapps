@@ -43,9 +43,18 @@ TODO
 ## Generate LEAN
 TODO doc here
 
-
-## Methodology
+# Methodology
 - ask llm to generate property tests for apps problems
 - subject corresponding apps solutions to those property tests
 - ask llm to generate sorry'd out lean theorems from property tests
 - output task: original task plus sorry'd out lean theorems.
+
+# TODO weekend of 20th
+get it set up to do the big run, in general. not listing out what all those tasks are in advance
+- [ ] track metadata in csv or json about how the run is going (for resets/checkpoints) including last exit code
+- [ ] refactor apps preproc agent to use ABC
+- [ ] logger!
+- [ ] check if haiku is viable for core agent loop (more likely for lean)
+- [ ] don't forget to record question.txt inherited from `apps` in the output dirs
+- [ ] consider this weekend learning about huggingface and set up traversing the filesystem to turn outputs into huggingface dataset
+- [ ] etc
