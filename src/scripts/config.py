@@ -5,7 +5,7 @@ pythoncfg = {
     only generating code with no surrounding commentary that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """,
-    "first_prompt": lambda x: f"""Please write property tests for this function:\n\n{x}""",
+    "first_prompt": lambda x: f"""Please write property tests for this function. You can assume this file is in "solution_clean.py" and the tests will be in a file called "test_solution.py":\n\n{x}""",
     "continuous_prompt": lambda stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
     Please fix your original output, again only generating code within the 3 backticks.""",
 }

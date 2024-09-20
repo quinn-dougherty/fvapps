@@ -4,7 +4,12 @@ import re
 def extract_single_backticks(text: str) -> str | None:
     pattern = r"```(.*?)```"
     match = re.search(pattern, text, re.DOTALL)
-    return match.group(1) if match else None
+    if match:
+        return match.group(1)
+    else:
+        pattern = r"```(.*?)"
+        match = re.search(pattern, text, re.DOTALL)
+        return match.group(1) if match else None
 
 
 def check_and_strip_language_declaration(code: str, language: str = "python") -> str:
@@ -27,7 +32,7 @@ def extract_code_block(text: str, language: str = "python") -> str:
 
     code_block = extract_single_backticks(text)
     if code_block is None:
-        raise ValueError("No code block found in the given text.")
+        raise ValueError(f"No code block found in the given text: {text}")
 
     code_block = check_and_strip_language_declaration(code_block, language=language)
 

@@ -28,16 +28,18 @@ Set up and download the apps dataset with
 sh scripts/setup_apps.sh
 ```
 ## Preprocess/Cleanup
-Then preprocess the dataset to format the solutions nicely. You can choose a problem and run it by:
+Then preprocess the dataset to format the solutions nicely. You can choose a problem and run it by: TODO
 ```python
-rye run preprocess_app_problem problem_id=PROBLEM_ID
+rye run src/scripts/populate_apps_sols.py problem_id=PROBLEM_ID
 ```
+(TODO argparse impl for that script)
 This will use the Claude API to create a proper function that can be used for property testing.
 
 ## Generate Python Property Tests
 You can then generate property tests using a similar Claude agent loop.
 ```
-TODO
+# TODO add argparse, currently just runs up to 5
+rye run python src/scripts/apps_gen_hyp_tests.py
 ```
 
 ## Generate LEAN
