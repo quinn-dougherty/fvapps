@@ -36,6 +36,7 @@ def get_single_apps_test_cases(apps_row: dict) -> str:
 
 
 def get_succinct_apps_datarow(apps_row: dict) -> dict:
+    # TODO: retain difficulty and other metadata
     return {
         "problem_id": apps_row["problem_id"],
         "problem_statement": apps_row["question"],
@@ -57,15 +58,11 @@ def setup_apps_directories(root_path: Path):
         split_path = Path(root_path / f"artefacts/apps/{split}")
         split_path.mkdir(parents=True, exist_ok=True)
 
-        # create hypothesis and lean subdirectories
-        Path(split_path / "python").mkdir(parents=True, exist_ok=True)
-        Path(split_path / "lean").mkdir(parents=True, exist_ok=True)
-
 
 def construct_apps_paths(root_path: Path, apps_row: dict, split: str) -> Path:
     problem_id = apps_row["problem_id"]
 
-    split_path = Path(root_path / f"artefacts/apps/{split}/")
+    split_path = Path(root_path / "artefacts" / "apps" / split)
 
     problem_path = Path(split_path / str(problem_id))
 
@@ -124,7 +121,7 @@ class AppsPreprocAgent:
         return response.content[0].text  # type: ignore
 
     def query_base_case(self, function: str):
-        return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
+        return self.send_appended_user_message(self.first_prompt(function))  # type: ignore
 
     def extract_code(self, response: str):
         return extract_code_block(response, language=self.language)
