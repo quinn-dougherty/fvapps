@@ -22,3 +22,4 @@ wheels/
 .venv
 
 .ipynb_checkpoints/
+artefacts/*.log

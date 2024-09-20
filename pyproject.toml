@@ -20,10 +20,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-hypothesis_gen_test = "scripts.example_agent_run:python_main"
-lean_gen_test = "scripts.example_agent_run:lean_main"
-apps_preprocess = "scripts.apps_preproc:main"
-apps_populate = "scripts.populate_apps_sols:main"
+hypothesis_gen_example = "scripts.example_agent_run:python_main"
+lean_gen_example = "scripts.example_agent_run:lean_main"
+apps_preprocess_test = "scripts.apps_preproc:test"
+apps_preprocess_all = "scripts.apps_preproc:main_all"
 
 [tool.rye]
 managed = true
@@ -44,6 +44,3 @@ packages = ["src/benchmark", "src/baselines", "src/scripts"]
 testpaths = [
   "test"
 ]
-
-[tool.setuptools]
-packages = ["src/benchmark", "src/baselines", "src/scripts"]

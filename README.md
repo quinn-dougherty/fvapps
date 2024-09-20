@@ -54,9 +54,12 @@ TODO doc here
 # TODO weekend of 20th
 get it set up to do the big run, in general. not listing out what all those tasks are in advance
 - [ ] track metadata in csv or json about how the run is going (for resets/checkpoints) including last exit code
-- [ ] refactor apps preproc agent to use ABC
+- [x] refactor apps preproc agent to use ABC
 - [ ] logger!
 - [ ] check if haiku is viable for core agent loop (more likely for lean)
 - [ ] don't forget to record question.txt inherited from `apps` in the output dirs
 - [ ] consider this weekend learning about huggingface and set up traversing the filesystem to turn outputs into huggingface dataset
-- [ ] etc
+- [ ] embarassing parallel
+- [ ] make indices fill, like 00001, 00020 instead of 1, 20
+- [ ] need to put initial question in system prompt for caching
+- [ ] resumes

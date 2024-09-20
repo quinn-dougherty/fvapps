@@ -1,12 +1,10 @@
-from benchmark.prompting import PythonAgent, LeanAgent, AgentConfig
+from benchmark.agent.types import AgentConfig
+from benchmark.agent.hypothesizer import PythonAgent
+from benchmark.agent.sorryer import LeanAgent
 from scripts.config import leancfg, pythoncfg
-import tomllib
 import pathlib
 
 EXAMPLE = "string"
-
-with open("src/config.toml", "rb") as f:
-    cfg = tomllib.load(f)
 
 artefacts = pathlib.Path("artefacts")
 examples = artefacts / "examples"
@@ -20,9 +18,9 @@ def python_main():
     agent = PythonAgent(
         inp=content,
         out=str(examples / f"test_{EXAMPLE}.py"),
-        config=AgentConfig(**cfg["python"], **pythoncfg),
+        config=AgentConfig(**pythoncfg),
     )
-    final_exit_code = agent.loop_until_condition()
+    final_exit_code = agent.loop()
 
     print(agent.dump_full_chat_history())
     print("Was the final generation successful?", final_exit_code)
@@ -37,9 +35,9 @@ def lean_main():
     agent = LeanAgent(
         inp=content,
         out=str(examples / "Spec.lean"),
-        config=AgentConfig(**cfg["lean"], **leancfg),
+        config=AgentConfig(**leancfg),
     )
-    final_exit_code = agent.loop_until_condition()
+    final_exit_code = agent.loop()
 
     print(agent.dump_full_chat_history())
     print("Was the final generation successful?", final_exit_code)

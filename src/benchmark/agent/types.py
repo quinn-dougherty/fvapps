@@ -1,6 +1,4 @@
 import os
-import shutil
-import subprocess
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Union, Literal
 from dataclasses import dataclass
@@ -8,7 +6,8 @@ from dataclasses import dataclass
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from benchmark.utils import extract_code_block
+from benchmark.utils.logger_setup import logging
+from benchmark.utils.code_blocks import extract_code_block
 
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
@@ -23,6 +22,7 @@ class AgentConfig:
     system_prompt: Callable[..., str]
     first_prompt: Callable[..., str]
     continuous_prompt: Callable[..., str]
+    sample_idx: int | None = None
 
 
 class DebuggingAgent(ABC):
@@ -35,6 +35,7 @@ class DebuggingAgent(ABC):
         self.system_prompt = config.system_prompt
         self.first_prompt = config.first_prompt
         self.continuous_prompt = config.continuous_prompt
+        self.sample_idx = config.sample_idx
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -63,9 +64,6 @@ class DebuggingAgent(ABC):
         )
         return response.content[0].text  # type: ignore
 
-    def query_base_case(self, function: str):
-        return self.send_appended_user_message(self.FIRST_PROMPT(function))  # type: ignore
-
     @abstractmethod
     def run_code(self, code: str) -> tuple[str, str, int]:
         pass
@@ -73,7 +71,7 @@ class DebuggingAgent(ABC):
     def extract_code(self, response: str):
         return extract_code_block(response, language=self.language)
 
-    def loop_until_condition(self) -> bool:
+    def loop(self) -> bool:
 
         print(f"Loop 1/{self.max_iterations}")
         # run the first pass and get some code
@@ -84,10 +82,8 @@ class DebuggingAgent(ABC):
         # subprocess call to run it and track outputs and exit codes
         stdout, stderr, returncode = self.run_code(code)
 
-        loops = 1
-        while not self.stopping_condition(returncode) and loops < self.max_iterations:
-            loops += 1
-            print(f"Loop {loops}/{self.max_iterations}")
+        for i in range(self.max_iterations):
+            print(f"Loop {i+1}/{self.max_iterations}")
 
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
@@ -97,6 +93,8 @@ class DebuggingAgent(ABC):
 
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
+            if self.stopping_condition(returncode):
+                break
 
         return self.stopping_condition(returncode)
 
@@ -105,29 +103,3 @@ class DebuggingAgent(ABC):
 
     def stopping_condition(self, returncode: int) -> bool:
         return returncode == 0
-
-
-class PythonAgent(DebuggingAgent):
-    def run_code(self, code: str) -> tuple[str, str, int]:
-
-        with open(self.out, "w") as f:
-            f.write(code)
-
-        result = subprocess.run(
-            ["pytest", self.out], capture_output=True, text=True, env=os.environ
-        )
-
-        return result.stdout, result.stderr, result.returncode
-
-
-class LeanAgent(DebuggingAgent):
-    def run_code(self, code: str) -> tuple[str, str, int]:
-
-        with open(self.out, "w") as f:
-            f.write(code)
-
-        result = subprocess.run(
-            ["lean", self.out], capture_output=True, text=True, env=os.environ
-        )
-
-        return result.stdout, result.stderr, result.returncode
