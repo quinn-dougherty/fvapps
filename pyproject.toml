@@ -22,8 +22,8 @@ build-backend = "hatchling.build"
 [project.scripts]
 hypothesis_gen_example = "scripts.example_agent_run:python_main"
 lean_gen_example = "scripts.example_agent_run:lean_main"
-apps_preprocess_test = "scripts.apps_preproc:test"
-apps_preprocess_all = "scripts.apps_preproc:main_all"
+preprocess = "scripts.preprocess:main"
+fvapps = "scripts.fvapps:main"
 
 [tool.rye]
 managed = true

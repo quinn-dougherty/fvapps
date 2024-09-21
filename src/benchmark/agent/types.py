@@ -1,6 +1,7 @@
 import os
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Union, Literal
+import subprocess
+from pathlib import Path
+from typing import Callable, Union, Literal
 from dataclasses import dataclass
 
 from anthropic import Anthropic
@@ -8,6 +9,18 @@ from dotenv import load_dotenv
 
 from benchmark.utils.logger_setup import logging
 from benchmark.utils.code_blocks import extract_code_block
+from benchmark.utils.metadata import (
+    initialize_metadata,
+    increment_preproc_loops,
+    increment_python_loops,
+    increment_lean_loops,
+    read_python,
+    read_lean,
+    read_preproc,
+    successfuler_lean,
+    successfuler_preproc,
+    successfuler_python,
+)
 
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
@@ -19,29 +32,67 @@ class AgentConfig:
     max_tokens_per_completion: int
     max_iterations: int
     language: Union[Literal["python"], Literal["lean"]]
+    executable: str
     system_prompt: Callable[..., str]
     first_prompt: Callable[..., str]
     continuous_prompt: Callable[..., str]
     sample_idx: int | None = None
 
 
-class DebuggingAgent(ABC):
+class DebuggingAgent:
 
     def __init__(self, inp: str, out: str, config: AgentConfig):
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
         self.language = config.language
+        self.executable = config.executable
         self.system_prompt = config.system_prompt
         self.first_prompt = config.first_prompt
         self.continuous_prompt = config.continuous_prompt
         self.sample_idx = config.sample_idx
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
-
-        self.inp = inp
-        self.out = out
+        self.inp = Path(inp)
+        self.out = Path(out)
+        initialize_metadata(self.out.parent)
         self.conversation: list = []
+
+    @property
+    def incrementor(self) -> Callable[[Path], None]:
+        match self.executable:
+            case "pytest":
+                return increment_python_loops
+            case "python":
+                return increment_preproc_loops
+            case "lean":
+                return increment_lean_loops
+            case _:  # unreachable
+                return lambda _: None
+
+    @property
+    def reader(self) -> Callable[[Path], dict]:
+        match self.executable:
+            case "pytest":
+                return read_python
+            case "python":
+                return read_preproc
+            case "lean":
+                return read_lean
+            case _:
+                return lambda _: {}
+
+    @property
+    def successfuler(self) -> Callable[[Path], None]:
+        match self.executable:
+            case "pytest":
+                return successfuler_python
+            case "python":
+                return successfuler_preproc
+            case "lean":
+                return successfuler_lean
+            case _:
+                return lambda _: None
 
     def append_user_message(self, message: str):
         entry = {"role": "user", "content": message}
@@ -64,27 +115,39 @@ class DebuggingAgent(ABC):
         )
         return response.content[0].text  # type: ignore
 
-    @abstractmethod
     def run_code(self, code: str) -> tuple[str, str, int]:
-        pass
+        with open(self.out, "w") as f:
+            f.write(code)
+        logging.info(f"Running code with {self.executable}")
+        result = subprocess.run(
+            [self.executable, self.out], capture_output=True, text=True, env=os.environ
+        )
+        return result.stdout, result.stderr, result.returncode
 
     def extract_code(self, response: str):
         return extract_code_block(response, language=self.language)
 
-    def loop(self) -> bool:
-
-        print(f"Loop 1/{self.max_iterations}")
-        # run the first pass and get some code
-        response = self.send_appended_user_message(self.first_prompt(self.inp))  # type: ignore
+    def loop_init(self) -> tuple[str, str, int]:
+        if self.out.exists():
+            with open(self.out, "r") as f:
+                code = f.read()
+            return self.run_code(code)
+        print(f"sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)")
+        response = self.send_appended_user_message(self.first_prompt(self.inp))
         self.conversation.append({"role": "assistant", "content": response})
         code = self.extract_code(response)
-
-        # subprocess call to run it and track outputs and exit codes
         stdout, stderr, returncode = self.run_code(code)
+        return stdout, stderr, returncode
 
-        for i in range(self.max_iterations):
-            print(f"Loop {i+1}/{self.max_iterations}")
-
+    def loop(self) -> bool:
+        stdout, stderr, returncode = self.loop_init()
+        loops_so_far = self.reader(self.out.parent)["loops"]
+        if self.stopping_condition(returncode):
+            self.successfuler(self.out.parent)
+            return True
+        for i in range(loops_so_far, self.max_iterations + loops_so_far):
+            print(f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations}")
+            self.incrementor(self.out.parent)
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
@@ -94,6 +157,7 @@ class DebuggingAgent(ABC):
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
+                self.successfuler(self.out.parent)
                 break
 
         return self.stopping_condition(returncode)
