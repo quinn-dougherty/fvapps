@@ -4,63 +4,70 @@ Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated pro
 
 ## Setup
 
+install `elan` and install/update to a nightly toolchain. Install `rye`.
+
 ```
 rye sync
+. .venv/bin/activate
 ```
+
+Sourcing the `.venv` will make sure we're not relying on `pytest` executable to have been installed in the global machine.
 
 Create a `.env` file with the following:
 ```
 ANTHROPIC_API_KEY="YOUR_KEY_HERE"
 ```
 
-## Basic Run
+On the linux server you'll need to install `parallel`, maybe `screen`.
 
-``` sh
-rye run hypothesis_gen_test
-rye run lean_gen_test
+## How to generate the benchmark
+
+First, we preprocess `apps` solutions
+
+```
+$ rye run preprocess --help
+usage: preprocess [-h] [--split SPLIT] [--start_idx START_IDX] [--end_idx END_IDX]
+
+options:
+  -h, --help            show this help message and exit
+  --split SPLIT         Train or test split. Default: train.
+  --start_idx START_IDX
+                        Start index for the dataset.
+  --end_idx END_IDX     End index for the dataset.
 ```
 
-## APPS
+They'll populate in `artefacts/apps/train/{i}`
 
-## Setup/Download
-Set up and download the apps dataset with
-```
-sh scripts/setup_apps.sh
-```
-## Preprocess/Cleanup
-Then preprocess the dataset to format the solutions nicely. You can choose a problem and run it by: TODO
-```python
-rye run src/scripts/populate_apps_sols.py problem_id=PROBLEM_ID
-```
-(TODO argparse impl for that script)
-This will use the Claude API to create a proper function that can be used for property testing.
+Then, two agents will generate property tests and sorry'd out lean theorems, respectively.
 
-## Generate Python Property Tests
-You can then generate property tests using a similar Claude agent loop.
 ```
-# TODO add argparse, currently just runs up to 5
-rye run python src/scripts/apps_gen_hyp_tests.py
+$ rye run fvapps --help
+usage: FV-APPS full generation run [-h] [--split SPLIT] [--start_idx START_IDX] [--end_idx END_IDX]
+                                   [--skip_lean] [--skip_python]
+
+options:
+  -h, --help            show this help message and exit
+  --split SPLIT         train or test (default: train)
+  --start_idx START_IDX
+                        index to start pulling from apps
+  --end_idx END_IDX     index to end pulling from apps
+  --skip_lean           skips lean when present
+  --skip_python         skips python when present
 ```
 
-## Generate LEAN
-TODO doc here
-
-# Methodology
-- ask llm to generate property tests for apps problems
-- subject corresponding apps solutions to those property tests
-- ask llm to generate sorry'd out lean theorems from property tests
-- output task: original task plus sorry'd out lean theorems.
+`rye run fvapps --skip_lean` depends on `rye run preprocess` to have been run before, and `rye run fvapps --skip_python` depends on both the preprocessing step and the fvapps python step to have been run before. (`FileNotFoundError` will guide you toward this understanding regardless)
 
 # TODO weekend of 20th
 get it set up to do the big run, in general. not listing out what all those tasks are in advance
-- [ ] track metadata in csv or json about how the run is going (for resets/checkpoints) including last exit code
+- [x] track metadata in csv or json about how the run is going (for resets/checkpoints) including last exit code
 - [x] refactor apps preproc agent to use base class
-- [ ] logger!
-- [ ] check if haiku is viable for core agent loop (more likely for lean)
+- [x] logging (this is semi checked off cuz it's not as thorough as we want and there's still some prints)
+- [x] check if haiku is viable for core agent loop (more likely for lean)
 - [x] don't forget to record question.txt inherited from `apps` in the output dirs
 - [ ] consider this weekend learning about huggingface and set up traversing the filesystem to turn outputs into huggingface dataset
-- [ ] embarassing parallel
+- [ ] embarassing parallel (this should be done at shell level with `parallel` linux tool. ask claude)
 - [ ] make indices fill, like 00001, 00020 instead of 1, 20
-- [ ] need to put initial question in system prompt for caching
+- [ ] need to put initial question in system prompt for caching (epistemic status: not 100% sure this is even cheaper)
 - [x] resumes
 - [ ] email zac for nepotism
+
