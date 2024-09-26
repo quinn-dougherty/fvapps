@@ -82,6 +82,15 @@ class DebuggingAgent:
             case _:
                 return lambda _: {}
 
+    def preceding_stage_exited_zero(self, path: Path) -> bool:
+        match self.executable:
+            case "pytest":
+                return read_preproc(path)["latest_run_success"]
+            case "lean":
+                return read_python(path)["latest_run_success"]
+            case _:
+                return False
+
     @property
     def successfuler(self) -> Callable[[Path], None]:
         match self.executable:
@@ -140,13 +149,18 @@ class DebuggingAgent:
         return stdout, stderr, returncode
 
     def loop(self) -> bool:
+        if not self.preceding_stage_exited_zero(self.out.parent):
+            logging.warning("Preceding stage did not exit with 0")
+            return False
         stdout, stderr, returncode = self.loop_init()
         loops_so_far = self.reader(self.out.parent)["loops"]
         if self.stopping_condition(returncode):
             self.successfuler(self.out.parent)
             return True
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            print(f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations}")
+            msg = f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
+            print(msg)
+            logging.info(msg)
             self.incrementor(self.out.parent)
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold

@@ -1,20 +1,20 @@
 [python_agent]
 model_name = "claude-3-5-sonnet-20240620"
 max_tokens_per_completion = 1024
-max_iterations = 4
+max_iterations = 5
 language = "python"
 executable = "pytest"
 
 [lean_agent]
 model_name = "claude-3-5-sonnet-20240620"
 max_tokens_per_completion = 1024
-max_iterations = 4
+max_iterations = 5
 language = "lean"
 executable = "lean"
 
 [preproc]
-model_name = "claude-3-haiku-20240307"
-max_tokens_per_completion = 1024
-max_iterations = 4
+model_name = "claude-3-5-sonnet-20240620" # "claude-3-haiku-20240307"
+max_tokens_per_completion = 2048
+max_iterations = 5
 language = "python"
 executable = "python"

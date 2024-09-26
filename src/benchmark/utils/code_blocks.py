@@ -1,15 +1,15 @@
 import re
+from benchmark.utils.logger_setup import logging
 
 
 def extract_single_backticks(text: str) -> str | None:
     pattern = r"```(.*?)```"
-    match = re.search(pattern, text, re.DOTALL)
-    if match:
-        return match.group(1)
-    else:
-        pattern = r"```(.*?)"
-        match = re.search(pattern, text, re.DOTALL)
-        return match.group(1) if match else None
+    mtch = re.search(pattern, text, re.DOTALL)
+    if mtch:
+        return mtch.group(1)
+    pattern = r"```(.*?)"
+    mtch = re.search(pattern, text, re.DOTALL)
+    return mtch.group(1) if mtch else None
 
 
 def check_and_strip_language_declaration(code: str, language: str = "python") -> str:
@@ -29,11 +29,11 @@ def extract_code_block(text: str, language: str = "python") -> str:
     1. Removing surrounding text outside of backticks.
     2. Removing backticks and code block delimiters.
     """
-
+    logging.debug(f"Extracting code block from the given text:\n{text}")
     code_block = extract_single_backticks(text)
     if code_block is None:
         raise ValueError(f"No code block found in the given text: {text}")
 
     code_block = check_and_strip_language_declaration(code_block, language=language)
-
+    logging.debug(f"Extracted code block:\n{code_block}")
     return code_block.strip()
