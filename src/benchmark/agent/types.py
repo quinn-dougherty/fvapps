@@ -1,22 +1,23 @@
+import json
 import os
 import subprocess
-from pathlib import Path
-from typing import Callable, Union, Literal
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Literal, Union
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from benchmark.utils.logger_setup import logging
 from benchmark.utils.code_blocks import extract_code_block
+from benchmark.utils.logger_setup import logging
 from benchmark.utils.metadata import (
-    initialize_metadata,
+    increment_lean_loops,
     increment_preproc_loops,
     increment_python_loops,
-    increment_lean_loops,
-    read_python,
+    initialize_metadata,
     read_lean,
     read_preproc,
+    read_python,
     successfuler_lean,
     successfuler_preproc,
     successfuler_python,
@@ -174,10 +175,16 @@ class DebuggingAgent:
                 self.successfuler(self.out.parent)
                 break
 
+        self.save_conversation()
+        logging.info(f"Final return code: {returncode}")
         return self.stopping_condition(returncode)
 
     def dump_full_chat_history(self):
         return self.conversation
+
+    def save_conversation(self):
+        with open(self.out.parent / "conversation.json", "w") as f:
+            json.dump(self.conversation, f, indent=4)
 
     def stopping_condition(self, returncode: int) -> bool:
         return returncode == 0

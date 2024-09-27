@@ -71,3 +71,8 @@ get it set up to do the big run, in general. not listing out what all those task
 - [x] resumes
 - [ ] email zac for nepotism
 
+# TODO from 27 Sep
+- [ ] 2048 is necessary
+- [ ] ask hypothesizer to only generate strategy tests, ignore unit test cases
+- [ ] refactor restart, loops, indexing
+- [ ] fix logging/conversation json overwriting

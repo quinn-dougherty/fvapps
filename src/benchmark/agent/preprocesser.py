@@ -1,7 +1,8 @@
-import subprocess
 import os
-from benchmark.utils.logger_setup import logging
+import subprocess
+
 from benchmark.agent.types import DebuggingAgent
+from benchmark.utils.logger_setup import logging
 
 
 class AppsPreprocAgent(DebuggingAgent):

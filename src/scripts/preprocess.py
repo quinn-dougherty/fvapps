@@ -1,13 +1,14 @@
 import pathlib
 from argparse import ArgumentParser
+
+from benchmark.agent.preprocesser import AppsPreprocAgent
+from benchmark.agent.types import AgentConfig
 from benchmark.utils.apps import (
     construct_apps_paths,
     get_succinct_apps_datarow,
     load_hf_apps_dataset,
     setup_apps_directories,
 )
-from benchmark.agent.types import AgentConfig
-from benchmark.agent.preprocesser import AppsPreprocAgent
 from scripts.config import preproc
 
 
@@ -65,6 +66,8 @@ def main():
     args = parser.parse_args()
     split = args.split
     ds = load_hf_apps_dataset(split=split)
+    print("Loaded APPS dataset to memory...")
     setup_apps_directories(pathlib.Path("."))
     for i in range(args.start_idx, args.end_idx):
+        print("Processing sample", i)
         run_AppsPreprocAgent(ds[i], split=split)

@@ -2,6 +2,7 @@
 artefacts/hypothesis/*.py
 artefacts/lean/*.lean
 artefacts/apps/*
+artefacts/old/*
 
 # hypotheses
 .hypothesis/
