@@ -1,7 +1,7 @@
 import pathlib
 from argparse import ArgumentParser
 
-from benchmark.agent.preprocesser import AppsPreprocAgent
+from benchmark.agent.agents import AppsPreprocAgent
 from benchmark.agent.types import AgentConfig
 from benchmark.utils.apps import (
     construct_apps_paths,

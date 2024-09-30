@@ -2,9 +2,9 @@
 
 import pathlib
 from argparse import ArgumentParser
+
+from benchmark.agent.agents import LeanAgent, PythonAgent
 from benchmark.agent.types import AgentConfig
-from benchmark.agent.hypothesizer import PythonAgent
-from benchmark.agent.sorryer import LeanAgent
 from scripts.config import leancfg, pythoncfg
 
 EXAMPLE = "string"

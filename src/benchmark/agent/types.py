@@ -126,6 +126,16 @@ class DebuggingAgent:
         return response.content[0].text  # type: ignore
 
     def run_code(self, code: str) -> tuple[str, str, int]:
+        if not code:
+            warning = "Code is the empty string"
+            logging.warning(warning)
+            return "", warning, 1
+        if "input(" in code or "sys.stdin" in code:
+            warning = "user interaction is not allowed"
+            logging.warning(warning)
+            return "", warning, 1
+        logging.info(f"Writing code to {self.out}")
+        logging.debug(f"Code:\n{code}")
         with open(self.out, "w") as f:
             f.write(code)
         logging.info(f"Running code with {self.executable}")
@@ -137,13 +147,19 @@ class DebuggingAgent:
     def extract_code(self, response: str):
         return extract_code_block(response, language=self.language)
 
+    def format_first_prompt(self) -> str:
+        return self.first_prompt(self.inp)
+
     def loop_init(self) -> tuple[str, str, int]:
         if self.out.exists():
             with open(self.out, "r") as f:
                 code = f.read()
             return self.run_code(code)
-        print(f"sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)")
-        response = self.send_appended_user_message(self.first_prompt(self.inp))
+
+        logging.info(
+            f"{self.__class__.__name__} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
+        )
+        response = self.send_appended_user_message(self.format_first_prompt())
         self.conversation.append({"role": "assistant", "content": response})
         code = self.extract_code(response)
         stdout, stderr, returncode = self.run_code(code)
