@@ -42,7 +42,7 @@ class AgentConfig:
 
 class DebuggingAgent:
 
-    def __init__(self, inp: str, out: str, config: AgentConfig):
+    def __init__(self, input_context: str, output_path: Path, config: AgentConfig):
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
@@ -54,9 +54,9 @@ class DebuggingAgent:
         self.sample_idx = config.sample_idx
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
-        self.inp = Path(inp)
-        self.out = Path(out)
-        initialize_metadata(self.out.parent)
+        self.input = input_context
+        self.output_path = output_path
+        initialize_metadata(self.output_path.parent)
         self.conversation: list = []
 
     @property
@@ -120,7 +120,7 @@ class DebuggingAgent:
         response = self.client.beta.prompt_caching.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
-            system=[sysprompt],
+            system=[sysprompt],  # type: ignore
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
@@ -134,13 +134,16 @@ class DebuggingAgent:
             warning = "user interaction is not allowed"
             logging.warning(warning)
             return "", warning, 1
-        logging.info(f"Writing code to {self.out}")
+        logging.info(f"Writing code to {self.output_path}")
         logging.debug(f"Code:\n{code}")
-        with open(self.out, "w") as f:
+        with open(self.output_path, "w") as f:
             f.write(code)
         logging.info(f"Running code with {self.executable}")
         result = subprocess.run(
-            [self.executable, self.out], capture_output=True, text=True, env=os.environ
+            [self.executable, self.output_path],
+            capture_output=True,
+            text=True,
+            env=os.environ,
         )
         return result.stdout, result.stderr, result.returncode
 
@@ -148,11 +151,11 @@ class DebuggingAgent:
         return extract_code_block(response, language=self.language)
 
     def format_first_prompt(self) -> str:
-        return self.first_prompt(self.inp)
+        return self.first_prompt(self.input)
 
     def loop_init(self) -> tuple[str, str, int]:
-        if self.out.exists():
-            with open(self.out, "r") as f:
+        if self.output_path.exists():
+            with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
 
@@ -166,19 +169,19 @@ class DebuggingAgent:
         return stdout, stderr, returncode
 
     def loop(self) -> bool:
-        if not self.preceding_stage_exited_zero(self.out.parent):
+        if not self.preceding_stage_exited_zero(self.output_path.parent):
             logging.warning("Preceding stage did not exit with 0")
             return False
         stdout, stderr, returncode = self.loop_init()
-        loops_so_far = self.reader(self.out.parent)["loops"]
+        loops_so_far = self.reader(self.output_path.parent)["loops"]
         if self.stopping_condition(returncode):
-            self.successfuler(self.out.parent)
+            self.successfuler(self.output_path.parent)
             return True
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
             msg = f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
             print(msg)
             logging.info(msg)
-            self.incrementor(self.out.parent)
+            self.incrementor(self.output_path.parent)
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
@@ -188,7 +191,7 @@ class DebuggingAgent:
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
-                self.successfuler(self.out.parent)
+                self.successfuler(self.output_path.parent)
                 break
 
         self.save_conversation()

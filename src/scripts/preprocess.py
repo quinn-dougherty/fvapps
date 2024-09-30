@@ -48,9 +48,9 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     test_path = problem_path / "solution_clean.py"
 
     agent = AppsPreprocAgent(
-        inp="",  # not used in this agent,
+        input_context="",  # not used in this agent
+        output_path=test_path,
         config=config,
-        out=str(test_path),
         sample=sample,
     )
 

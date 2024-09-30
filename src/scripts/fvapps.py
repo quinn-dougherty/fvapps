@@ -42,8 +42,8 @@ def python_main(in_path, out_path, sample_idx):
         content = f.read()
 
     agent = PythonAgent(
-        inp=content,
-        out=out_path,
+        input_context=content,
+        output_path=out_path,
         config=AgentConfig(**pythoncfg, sample_idx=sample_idx),
     )
     final_exit_code = agent.loop()
@@ -61,7 +61,9 @@ def lean_main(in_path, out_path, sample_idx):
         content = f.read()
 
     agent = LeanAgent(
-        inp=content, out=out_path, config=AgentConfig(**leancfg, sample_idx=sample_idx)
+        input_context=content,
+        output_path=out_path,
+        config=AgentConfig(**leancfg, sample_idx=sample_idx),
     )
     final_exit_code = agent.loop()
 
