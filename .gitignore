@@ -4,6 +4,8 @@ artefacts/lean/*.lean
 artefacts/apps/*
 artefacts/old/*
 artefacts/examples/metadata.json
+artefacts/examples/test*
+artefacts/examples/*.lean
 
 # hypotheses
 .hypothesis/
