@@ -3,6 +3,7 @@ artefacts/hypothesis/*.py
 artefacts/lean/*.lean
 artefacts/apps/*
 artefacts/old/*
+artefacts/examples/metadata.json
 
 # hypotheses
 .hypothesis/
