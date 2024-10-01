@@ -3,10 +3,8 @@ from benchmark.agent.types import DebuggingAgent
 
 class AppsPreprocAgent(DebuggingAgent):
 
-    def __init__(self, input_context, output_path, config, sample):
-        super().__init__(
-            input_context=input_context, output_path=output_path, config=config
-        )
+    def __init__(self, sample, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.sample = sample
 
     def format_first_prompt(self) -> str:

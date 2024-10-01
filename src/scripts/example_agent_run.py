@@ -25,7 +25,7 @@ def python_main():
         input_context=content,
         output_path=py_hyp_path,
         config=AgentConfig(**pythoncfg),
-        check_previous_stage=False,
+        check_previous_stage=False,  # examples don't run through the cleanup part of the pipeline
     )
     final_exit_code = agent.loop()
 

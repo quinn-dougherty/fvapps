@@ -42,7 +42,13 @@ class AgentConfig:
 
 class DebuggingAgent:
 
-    def __init__(self, input_context: str, output_path: Path, config: AgentConfig):
+    def __init__(
+        self,
+        input_context: str,
+        output_path: Path,
+        config: AgentConfig,
+        check_previous_stage: bool = True,
+    ):
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
@@ -58,6 +64,8 @@ class DebuggingAgent:
         self.output_path = output_path
         initialize_metadata(self.output_path.parent)
         self.conversation: list = []
+
+        self.check_previous_stage = check_previous_stage
 
     @property
     def incrementor(self) -> Callable[[Path], None]:
@@ -130,7 +138,7 @@ class DebuggingAgent:
             warning = "Code is the empty string"
             logging.warning(warning)
             return "", warning, 1
-        if "input(" in code or "sys.stdin" in code:
+        if "input()" in code or "sys.stdin" in code:
             warning = "user interaction is not allowed"
             logging.warning(warning)
             return "", warning, 1
@@ -145,6 +153,9 @@ class DebuggingAgent:
             text=True,
             env=os.environ,
         )
+        logging.info(f"returncode: {result.returncode}")
+        logging.info(f"stderr:\n{result.stderr}")
+        logging.info(f"stdout:\n{result.stdout}")
         return result.stdout, result.stderr, result.returncode
 
     def extract_code(self, response: str):
@@ -154,7 +165,7 @@ class DebuggingAgent:
         return self.first_prompt(self.input)
 
     def loop_init(self) -> tuple[str, str, int]:
-        if self.output_path.exists():
+        if self.check_previous_stage and self.output_path.exists():
             with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
@@ -169,7 +180,9 @@ class DebuggingAgent:
         return stdout, stderr, returncode
 
     def loop(self) -> bool:
-        if not self.preceding_stage_exited_zero(self.output_path.parent):
+        if self.check_previous_stage and not self.preceding_stage_exited_zero(
+            self.output_path.parent
+        ):
             logging.warning("Preceding stage did not exit with 0")
             return False
         stdout, stderr, returncode = self.loop_init()
@@ -202,7 +215,7 @@ class DebuggingAgent:
         return self.conversation
 
     def save_conversation(self):
-        with open(self.out.parent / "conversation.json", "w") as f:
+        with open(self.output_path.parent / "conversation.json", "w") as f:
             json.dump(self.conversation, f, indent=4)
 
     def stopping_condition(self, returncode: int) -> bool:

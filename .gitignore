@@ -3,9 +3,8 @@ artefacts/hypothesis/*.py
 artefacts/lean/*.lean
 artefacts/apps/*
 artefacts/old/*
-artefacts/examples/metadata.json
-artefacts/examples/test*
-artefacts/examples/*.lean
+artefacts/examples/*
+!artefacts/examples/*/solution_clean.py
 
 # hypotheses
 .hypothesis/
