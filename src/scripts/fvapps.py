@@ -15,7 +15,8 @@ def mk_parser() -> ArgumentParser:
     parser.add_argument(
         "--split",
         help="train or test (default: train)",
-        type=lambda s: s if s == "train" or s == "test" else None,
+        type=str,
+        choices=["train", "test"],
         default="train",
     )
     parser.add_argument(
@@ -23,7 +24,7 @@ def mk_parser() -> ArgumentParser:
     )
     parser.add_argument(
         "--end_idx",
-        help="index to end pulling from apps",
+        help="index to end pulling from apps (inclusive)",
         type=int,
         default=int(1e4 / 2),
     )
@@ -82,7 +83,7 @@ def main():
     root_path = pathlib.Path("artefacts") / "apps" / args.split
 
     if args.skip_python:
-        for i in range(args.start_idx, args.end_idx):
+        for i in range(args.start_idx, args.end_idx + 1):
             inp_python_path = root_path / str(i) / "solution_clean.py"
             out_hyp_path = root_path / str(i) / "test_solution.py"
 

@@ -17,14 +17,18 @@ def mk_parser():
     parser.add_argument(
         "--split",
         help="Train or test split. Default: train.",
-        type=lambda s: s if s == "train" or s == "test" else None,
+        type=str,
+        choices=["train", "test"],
         default="train",
     )
     parser.add_argument(
         "--start_idx", help="Start index for the dataset.", type=int, default=0
     )
     parser.add_argument(
-        "--end_idx", help="End index for the dataset.", type=int, default=int(1e4 / 2)
+        "--end_idx",
+        help="End index for the dataset (inclusive).",
+        type=int,
+        default=int(1e4 / 2),
     )
     return parser
 
@@ -68,6 +72,6 @@ def main():
     ds = load_hf_apps_dataset(split=split)
     print("Loaded APPS dataset to memory...")
     setup_apps_directories(pathlib.Path("."))
-    for i in range(args.start_idx, args.end_idx):
+    for i in range(args.start_idx, args.end_idx + 1):
         print("Processing sample", i)
         run_AppsPreprocAgent(ds[i], split=split)
