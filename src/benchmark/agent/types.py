@@ -165,7 +165,7 @@ class DebuggingAgent:
         return self.first_prompt(self.input)
 
     def loop_init(self) -> tuple[str, str, int]:
-        if self.check_previous_stage and self.output_path.exists():
+        if self.output_path.exists():
             with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
@@ -215,7 +215,10 @@ class DebuggingAgent:
         return self.conversation
 
     def save_conversation(self):
-        with open(self.output_path.parent / "conversation.json", "w") as f:
+        with open(
+            self.output_path.parent / f"{self.__class__.__name__}_conversation.json",
+            "w",
+        ) as f:
             json.dump(self.conversation, f, indent=4)
 
     def stopping_condition(self, returncode: int) -> bool:
