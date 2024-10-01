@@ -88,7 +88,7 @@ def main():
             python_main(inp_python_path, out_hyp_path, i)
 
     if args.skip_lean:
-        for i in range(args.start_idx, args.end_idx):
+        for i in range(args.start_idx, args.end_idx + 1):
             out_hyp_path = root_path / str(i) / "test_solution.py"
             out_lean_path = root_path / str(i) / "Spec.lean"
 
