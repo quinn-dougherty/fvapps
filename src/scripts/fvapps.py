@@ -49,7 +49,6 @@ def python_main(in_path, out_path, sample_idx):
     )
     final_exit_code = agent.loop()
 
-    # print(agent.dump_full_chat_history())
     print(
         f"Was the final PYTHON generation for sample {sample_idx} successful? {final_exit_code}"
     )
@@ -68,7 +67,6 @@ def lean_main(in_path, out_path, sample_idx):
     )
     final_exit_code = agent.loop()
 
-    # print(agent.dump_full_chat_history())
     print(
         f"Was the final LEAN generation for sample {sample_idx} successful? {final_exit_code}"
     )
