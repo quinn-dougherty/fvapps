@@ -11,20 +11,21 @@ examples = artefacts / "examples"
 
 example_path = examples / EXAMPLE
 
-py_func_path = example_path / f"{EXAMPLE}.py"
+clean_func_path = example_path / f"solution_clean.py"
 py_hyp_path = example_path / f"hypotheses.py"
 lean_path = example_path / f"Spec.lean"
 
 
 def python_main():
 
-    with open(py_func_path, "r") as f:
+    with open(clean_func_path, "r") as f:
         content = f.read()
 
     agent = PythonAgent(
         input_context=content,
         output_path=py_hyp_path,
         config=AgentConfig(**pythoncfg),
+        check_previous_stage=False,
     )
     final_exit_code = agent.loop()
 
@@ -48,3 +49,8 @@ def lean_main():
     print(agent.dump_full_chat_history())
     print("Was the final generation successful?", final_exit_code)
     return
+
+
+def main():
+    python_main()
+    lean_main()
