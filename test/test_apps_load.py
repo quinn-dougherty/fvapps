@@ -1,6 +1,6 @@
 import pytest
 
-from src.benchmark.apps_utils import (
+from src.benchmark.utils.apps import (
     get_single_apps_solution,
     get_single_apps_test_cases,
     get_succinct_apps_datarow,

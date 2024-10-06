@@ -1,7 +1,7 @@
 import pathlib
 from argparse import ArgumentParser
 
-from benchmark.agent.preprocesser import AppsPreprocAgent
+from benchmark.agent.agents import AppsPreprocAgent
 from benchmark.agent.types import AgentConfig
 from benchmark.utils.apps import (
     construct_apps_paths,
@@ -17,14 +17,18 @@ def mk_parser():
     parser.add_argument(
         "--split",
         help="Train or test split. Default: train.",
-        type=lambda s: s if s == "train" or s == "test" else None,
+        type=str,
+        choices=["train", "test"],
         default="train",
     )
     parser.add_argument(
         "--start_idx", help="Start index for the dataset.", type=int, default=0
     )
     parser.add_argument(
-        "--end_idx", help="End index for the dataset.", type=int, default=int(1e4 / 2)
+        "--end_idx",
+        help="End index for the dataset (inclusive).",
+        type=int,
+        default=int(1e4 / 2),
     )
     return parser
 
@@ -48,9 +52,9 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     test_path = problem_path / "solution_clean.py"
 
     agent = AppsPreprocAgent(
-        inp="",  # not used in this agent,
+        input_context="",  # not used in this agent
+        output_path=test_path,
         config=config,
-        out=str(test_path),
         sample=sample,
     )
 
@@ -68,6 +72,6 @@ def main():
     ds = load_hf_apps_dataset(split=split)
     print("Loaded APPS dataset to memory...")
     setup_apps_directories(pathlib.Path("."))
-    for i in range(args.start_idx, args.end_idx):
+    for i in range(args.start_idx, args.end_idx + 1):
         print("Processing sample", i)
         run_AppsPreprocAgent(ds[i], split=split)

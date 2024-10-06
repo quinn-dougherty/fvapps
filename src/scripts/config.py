@@ -7,13 +7,13 @@ pythoncfg = {
     **{
         "system_prompt": lambda x: """
     You are a senior Python developer with expertise in generating property tests. You excel at
-    completely covering edge cases and possible inputs using pytest and hypothesis. Be as concise as possible,
-    only generating code with no surrounding commentary that can be directly exported into a file and ran.
+    strong coverage over generic type edge cases without explicitly copying specific test cases, using pytest and hypothesis.
+     Be as concise as possible, only generating code with no surrounding commentary that can be directly exported into a file and ran.
     Start your generation with 3 backticks, and end it with 3 backticks.
     """,
-        "first_prompt": lambda x: f"""Please write property tests for this function. You can assume this file is in "solution_clean.py" and the tests will be in a file called "test_solution.py":\n\n{x}""",
-        "continuous_prompt": lambda stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n.
-    Please fix your original output, again only generating code within the 3 backticks.""",
+        "first_prompt": lambda x: f"""Please write property tests for the function in this file. The test cases may help, but do not copy them directly unless they make sense as property tests. You can assume this file is in "solution_clean.py" and the tests will be in a file called "test_solution.py":\n\n{x}""",
+        "continuous_prompt": lambda stdout, stderr: f"""Running the code produced the following output:\n\nStandard out:\n{stdout}\n\nStandard error:\n{stderr}\n\n
+    Please fix the tests, again only generating code within the 3 backticks. If this is hard and you have tried twice, remove the failing test and add a comment.""",
     },
     **cfg["python_agent"],
 }

@@ -42,7 +42,13 @@ class AgentConfig:
 
 class DebuggingAgent:
 
-    def __init__(self, inp: str, out: str, config: AgentConfig):
+    def __init__(
+        self,
+        input_context: str,
+        output_path: Path,
+        config: AgentConfig,
+        check_previous_stage: bool = True,
+    ):
         self.model_name = config.model_name
         self.max_tokens_per_completion = config.max_tokens_per_completion
         self.max_iterations = config.max_iterations
@@ -54,10 +60,12 @@ class DebuggingAgent:
         self.sample_idx = config.sample_idx
 
         self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
-        self.inp = Path(inp)
-        self.out = Path(out)
-        initialize_metadata(self.out.parent)
+        self.input = input_context
+        self.output_path = output_path
+        initialize_metadata(self.output_path.parent)
         self.conversation: list = []
+
+        self.check_previous_stage = check_previous_stage
 
     @property
     def incrementor(self) -> Callable[[Path], None]:
@@ -120,49 +128,73 @@ class DebuggingAgent:
         response = self.client.beta.prompt_caching.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
-            system=[sysprompt],
+            system=[sysprompt],  # type: ignore
             messages=self.conversation,
         )
         return response.content[0].text  # type: ignore
 
     def run_code(self, code: str) -> tuple[str, str, int]:
-        with open(self.out, "w") as f:
+        if not code:
+            warning = "Code is the empty string"
+            logging.warning(warning)
+            return "", warning, 1
+        if "input()" in code or "sys.stdin" in code:
+            warning = "user interaction is not allowed"
+            logging.warning(warning)
+            return "", warning, 1
+        logging.info(f"Writing code to {self.output_path}")
+        logging.debug(f"Code:\n{code}")
+        with open(self.output_path, "w") as f:
             f.write(code)
         logging.info(f"Running code with {self.executable}")
         result = subprocess.run(
-            [self.executable, self.out], capture_output=True, text=True, env=os.environ
+            [self.executable, self.output_path],
+            capture_output=True,
+            text=True,
+            env=os.environ,
         )
+        logging.info(f"returncode: {result.returncode}")
+        logging.info(f"stderr:\n{result.stderr}")
+        logging.info(f"stdout:\n{result.stdout}")
         return result.stdout, result.stderr, result.returncode
 
     def extract_code(self, response: str):
         return extract_code_block(response, language=self.language)
 
+    def format_first_prompt(self) -> str:
+        return self.first_prompt(self.input)
+
     def loop_init(self) -> tuple[str, str, int]:
-        if self.out.exists():
-            with open(self.out, "r") as f:
+        if self.output_path.exists():
+            with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
-        print(f"sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)")
-        response = self.send_appended_user_message(self.first_prompt(self.inp))
+
+        logging.info(
+            f"{self.__class__.__name__} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
+        )
+        response = self.send_appended_user_message(self.format_first_prompt())
         self.conversation.append({"role": "assistant", "content": response})
         code = self.extract_code(response)
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
 
     def loop(self) -> bool:
-        if not self.preceding_stage_exited_zero(self.out.parent):
+        if self.check_previous_stage and not self.preceding_stage_exited_zero(
+            self.output_path.parent
+        ):
             logging.warning("Preceding stage did not exit with 0")
             return False
         stdout, stderr, returncode = self.loop_init()
-        loops_so_far = self.reader(self.out.parent)["loops"]
+        loops_so_far = self.reader(self.output_path.parent)["loops"]
         if self.stopping_condition(returncode):
-            self.successfuler(self.out.parent)
+            self.successfuler(self.output_path.parent)
             return True
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
             msg = f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
             print(msg)
             logging.info(msg)
-            self.incrementor(self.out.parent)
+            self.incrementor(self.output_path.parent)
             # if not done, append the response to the conversation and get a new response
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
@@ -172,7 +204,7 @@ class DebuggingAgent:
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
-                self.successfuler(self.out.parent)
+                self.successfuler(self.output_path.parent)
                 break
 
         self.save_conversation()
@@ -183,7 +215,10 @@ class DebuggingAgent:
         return self.conversation
 
     def save_conversation(self):
-        with open(self.out.parent / "conversation.json", "w") as f:
+        with open(
+            self.output_path.parent / f"{self.__class__.__name__}_conversation.json",
+            "w",
+        ) as f:
             json.dump(self.conversation, f, indent=4)
 
     def stopping_condition(self, returncode: int) -> bool:

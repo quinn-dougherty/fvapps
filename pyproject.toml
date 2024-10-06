@@ -20,8 +20,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-hypothesis_gen_example = "scripts.example_agent_run:python_main"
-lean_gen_example = "scripts.example_agent_run:lean_main"
+example_pipeline = "scripts.example_agent_run:main"
+hypgen_example = "scripts.example_agent_run:python_main"
+leangen_example = "scripts.example_agent_run:lean_main"
 preprocess = "scripts.preprocess:main"
 fvapps = "scripts.fvapps:main"
 

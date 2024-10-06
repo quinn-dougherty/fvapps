@@ -2,9 +2,9 @@
 
 import pathlib
 from argparse import ArgumentParser
+
+from benchmark.agent.agents import LeanAgent, PythonAgent
 from benchmark.agent.types import AgentConfig
-from benchmark.agent.hypothesizer import PythonAgent
-from benchmark.agent.sorryer import LeanAgent
 from scripts.config import leancfg, pythoncfg
 
 EXAMPLE = "string"
@@ -15,7 +15,8 @@ def mk_parser() -> ArgumentParser:
     parser.add_argument(
         "--split",
         help="train or test (default: train)",
-        type=lambda s: s if s == "train" or s == "test" else None,
+        type=str,
+        choices=["train", "test"],
         default="train",
     )
     parser.add_argument(
@@ -23,7 +24,7 @@ def mk_parser() -> ArgumentParser:
     )
     parser.add_argument(
         "--end_idx",
-        help="index to end pulling from apps",
+        help="index to end pulling from apps (inclusive)",
         type=int,
         default=int(1e4 / 2),
     )
@@ -42,13 +43,12 @@ def python_main(in_path, out_path, sample_idx):
         content = f.read()
 
     agent = PythonAgent(
-        inp=content,
-        out=out_path,
+        input_context=content,
+        output_path=out_path,
         config=AgentConfig(**pythoncfg, sample_idx=sample_idx),
     )
     final_exit_code = agent.loop()
 
-    # print(agent.dump_full_chat_history())
     print(
         f"Was the final PYTHON generation for sample {sample_idx} successful? {final_exit_code}"
     )
@@ -61,11 +61,12 @@ def lean_main(in_path, out_path, sample_idx):
         content = f.read()
 
     agent = LeanAgent(
-        inp=content, out=out_path, config=AgentConfig(**leancfg, sample_idx=sample_idx)
+        input_context=content,
+        output_path=out_path,
+        config=AgentConfig(**leancfg, sample_idx=sample_idx),
     )
     final_exit_code = agent.loop()
 
-    # print(agent.dump_full_chat_history())
     print(
         f"Was the final LEAN generation for sample {sample_idx} successful? {final_exit_code}"
     )
@@ -80,14 +81,14 @@ def main():
     root_path = pathlib.Path("artefacts") / "apps" / args.split
 
     if args.skip_python:
-        for i in range(args.start_idx, args.end_idx):
+        for i in range(args.start_idx, args.end_idx + 1):
             inp_python_path = root_path / str(i) / "solution_clean.py"
             out_hyp_path = root_path / str(i) / "test_solution.py"
 
             python_main(inp_python_path, out_hyp_path, i)
 
     if args.skip_lean:
-        for i in range(args.start_idx, args.end_idx):
+        for i in range(args.start_idx, args.end_idx + 1):
             out_hyp_path = root_path / str(i) / "test_solution.py"
             out_lean_path = root_path / str(i) / "Spec.lean"
 
