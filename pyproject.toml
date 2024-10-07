@@ -1,7 +1,7 @@
 [project]
 name = "fvapps"
 version = "0.1.0"
-description = "Add your description here"
+description = "Formally verified automated programming progress standard"
 authors = [
     { name = "Quinn Dougherty", email = "quinnd@riseup.net" },
     { name = "Ronak Mehta", email = "ronakrm@gmail.com" }
@@ -11,6 +11,7 @@ dependencies = [
     "anthropic>=0.34.2",
     "python-dotenv>=1.0.1",
     "openai>=1.44.1",
+    "jsonlines>=4.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
@@ -25,6 +26,7 @@ hypgen_example = "scripts.example_agent_run:python_main"
 leangen_example = "scripts.example_agent_run:lean_main"
 preprocess = "scripts.preprocess:main"
 fvapps = "scripts.fvapps:main"
+postprocess = "scripts.postprocess:main"
 
 [tool.rye]
 managed = true
@@ -34,6 +36,8 @@ dev-dependencies = [
     "pytest>=8.3.2",
     "hypothesis>=6.112.0",
 ]
+[tool.rye.scripts]
+upload = { cmd = "./src/scripts/hf.sh"  }
 
 [tool.hatch.metadata]
 allow-direct-references = true

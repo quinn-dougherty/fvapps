@@ -82,14 +82,16 @@ def main():
 
     if args.skip_python:
         for i in range(args.start_idx, args.end_idx + 1):
-            inp_python_path = root_path / str(i) / "solution_clean.py"
-            out_hyp_path = root_path / str(i) / "test_solution.py"
+            idx = f"{i:04d}"
+            inp_python_path = root_path / idx / "solution_clean.py"
+            out_hyp_path = root_path / idx / "test_solution.py"
 
             python_main(inp_python_path, out_hyp_path, i)
 
     if args.skip_lean:
         for i in range(args.start_idx, args.end_idx + 1):
-            out_hyp_path = root_path / str(i) / "test_solution.py"
-            out_lean_path = root_path / str(i) / "Spec.lean"
+            idx = f"{i:04d}"
+            out_hyp_path = root_path / idx / "test_solution.py"
+            out_lean_path = root_path / idx / "Spec.lean"
 
             lean_main(out_hyp_path, out_lean_path, i)

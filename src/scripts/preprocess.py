@@ -49,6 +49,9 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     with open(problem_path / "question.txt", "w") as f:
         f.write(sample["problem_statement"])
 
+    with open(problem_path / "difficulty.txt", "w") as f:
+        f.write(sample["difficulty"])
+
     test_path = problem_path / "solution_clean.py"
 
     agent = AppsPreprocAgent(
@@ -74,4 +77,4 @@ def main():
     setup_apps_directories(pathlib.Path("."))
     for i in range(args.start_idx, args.end_idx + 1):
         print("Processing sample", i)
-        run_AppsPreprocAgent(ds[i], split=split)
+        run_AppsPreprocAgent(ds[i], split=split)  # type: ignore

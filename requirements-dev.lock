@@ -39,6 +39,7 @@ async-lru==2.0.4
 attrs==24.2.0
     # via aiohttp
     # via hypothesis
+    # via jsonlines
     # via jsonschema
     # via referencing
 babel==2.16.0
@@ -134,6 +135,8 @@ jiter==0.5.0
     # via openai
 json5==0.9.25
     # via jupyterlab-server
+jsonlines==4.0.0
+    # via fvapps
 jsonpointer==3.0.0
     # via jsonschema
 jsonschema==4.23.0

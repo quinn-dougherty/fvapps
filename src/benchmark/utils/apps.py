@@ -25,12 +25,12 @@ def get_single_apps_test_cases(apps_row: dict) -> str:
 
 
 def get_succinct_apps_datarow(apps_row: dict) -> dict:
-    # TODO: retain difficulty and other metadata
     return {
         "problem_id": apps_row["problem_id"],
         "problem_statement": apps_row["question"],
         "solution": get_single_apps_solution(apps_row),
         "test_cases": get_single_apps_test_cases(apps_row),
+        "difficulty": apps_row["difficulty"],
     }
 
 
@@ -49,8 +49,10 @@ def setup_apps_directories(root_path: Path):
 
 
 def construct_apps_paths(root_path: Path, apps_row: dict, split: str) -> Path:
+    """Effect: makes directory, but does nothing if directory already exists"""
     problem_id = apps_row["problem_id"]
-    split_path = Path(root_path / "artefacts" / "apps" / split)
+    problem_id = f"{problem_id:04d}"
+    split_path = Path(root_path) / "artefacts" / "apps" / split
     problem_path = split_path / str(problem_id)
     problem_path.mkdir(parents=True, exist_ok=True)
     return problem_path

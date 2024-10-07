@@ -191,7 +191,7 @@ class DebuggingAgent:
             self.successfuler(self.output_path.parent)
             return True
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            msg = f"sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
+            msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
             print(msg)
             logging.info(msg)
             self.incrementor(self.output_path.parent)
