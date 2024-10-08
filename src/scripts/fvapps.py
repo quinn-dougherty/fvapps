@@ -57,8 +57,17 @@ def python_main(in_path, out_path, sample_idx):
 
 def lean_main(in_path, out_path, sample_idx):
 
-    with open(in_path, "r") as f:
-        content = f.read()
+    try:
+        with open(in_path, "r") as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        print(
+            f"Python generation failed, unable to find test_solution.py for sample {sample_idx}"
+        )
+        print(
+            f"Was the final LEAN generation for sample {sample_idx} successful? False"
+        )
+        return
 
     agent = LeanAgent(
         input_context=content,
