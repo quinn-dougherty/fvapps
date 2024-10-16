@@ -38,17 +38,22 @@ class PythonAgent(DebuggingAgent):
         with open(self.output_path, "w") as f:
             f.write(code)
         logging.info(f"Running code with {self.executable}")
-        result = subprocess.run(
-            [
-                self.executable,
-                "--tb=short",
-                "--hypothesis-verbosity=quiet",
-                self.output_path,
-            ],
-            capture_output=True,
-            text=True,
-            env=os.environ,
-        )
+        try:
+            result = subprocess.run(
+                [
+                    self.executable,
+                    "--tb=short",
+                    "--hypothesis-verbosity=quiet",
+                    self.output_path,
+                ],
+                capture_output=True,
+                text=True,
+                env=os.environ,
+                timeout=5 * 60,
+            )
+        except subprocess.TimeoutExpired:
+            logging.warning("Timeout expired")
+            return "", "Timeout expired. Check for loops or make test cases smaller", 1
         logging.info(f"returncode: {result.returncode}")
         logging.info(f"stderr:\n{result.stderr}")
         logging.info(f"stdout:\n{result.stdout}")

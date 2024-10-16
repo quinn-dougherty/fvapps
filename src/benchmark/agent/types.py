@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import signal
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Literal, Union
@@ -147,12 +148,17 @@ class DebuggingAgent:
         with open(self.output_path, "w") as f:
             f.write(code)
         logging.info(f"Running code with {self.executable}")
-        result = subprocess.run(
-            [self.executable, self.output_path],
-            capture_output=True,
-            text=True,
-            env=os.environ,
-        )
+        try:
+            result = subprocess.run(
+                [self.executable, self.output_path],
+                capture_output=True,
+                text=True,
+                env=os.environ,
+                timeout=5 * 60,
+            )
+        except subprocess.TimeoutExpired:
+            logging.warning("Timeout expired")
+            return "", "Timeout expired", 1
         logging.info(f"returncode: {result.returncode}")
         logging.info(f"stderr:\n{result.stderr}")
         logging.info(f"stdout:\n{result.stdout}")
