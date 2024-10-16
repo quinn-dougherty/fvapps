@@ -133,7 +133,7 @@ class BaselineAgent:
             return True
         loops_so_far = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
+            msg = f"{self.executable} sample {self.sample_idx} - Loop {i}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
             # if not done, append the response to the conversation and get a new response

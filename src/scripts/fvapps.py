@@ -104,3 +104,7 @@ def main():
             out_lean_path = root_path / idx / "Spec.lean"
 
             lean_main(out_hyp_path, out_lean_path, i)
+
+
+if __name__ == "__main__":
+    main()

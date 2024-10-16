@@ -78,3 +78,7 @@ def main():
     for i in range(args.start_idx, args.end_idx + 1):
         print("Processing sample", i)
         run_AppsPreprocAgent(ds[i], split=split)  # type: ignore
+
+
+if __name__ == "__main__":
+    main()
