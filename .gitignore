@@ -4,6 +4,7 @@ artefacts/lean/*.lean
 artefacts/apps/*
 artefacts/old/*
 artefacts/examples/*
+artefacts/apps_
 !artefacts/examples/*/solution_clean.py
 
 # hypotheses

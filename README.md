@@ -1,8 +1,15 @@
 # FV-APPS
 
-Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated property tests and theorem statements.
+Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated theorem statements.
 
-## Setup
+[HuggingFace](https://huggingface.co/datasets/quinn-dougherty/fvapps):
+``` python
+datasets.load_dataset("quinn-dougherty/fvapps")
+```
+
+## How to regenerate the benchmark
+
+### Setup
 
 install `elan` and install/update to a nightly toolchain. Install `rye`.
 
@@ -20,7 +27,7 @@ ANTHROPIC_API_KEY="YOUR_KEY_HERE"
 
 On the linux server you'll need to install `parallel`, maybe `screen`.
 
-## How to generate the benchmark
+### Preprocess
 
 First, we preprocess `apps` solutions
 
@@ -37,6 +44,8 @@ options:
 ```
 
 They'll populate in `artefacts/apps/train/{i}`
+
+### Spec generation
 
 Then, two agents will generate property tests and sorry'd out lean theorems, respectively.
 
@@ -57,28 +66,27 @@ options:
 
 `rye run fvapps --skip_lean` depends on `rye run preprocess` to have been run before, and `rye run fvapps --skip_python` depends on both the preprocessing step and the fvapps python step to have been run before. (`FileNotFoundError` will guide you toward this understanding regardless)
 
-# TODO weekend of 20th
-get it set up to do the big run, in general. not listing out what all those tasks are in advance
-- [x] track metadata in csv or json about how the run is going (for resets/checkpoints) including last exit code
-- [x] refactor apps preproc agent to use base class
-- [x] logging (this is semi checked off cuz it's not as thorough as we want and there's still some prints)
-- [x] check if haiku is viable for core agent loop (more likely for lean)
-- [x] don't forget to record question.txt inherited from `apps` in the output dirs
-- [ ] consider this weekend learning about huggingface and set up traversing the filesystem to turn outputs into huggingface dataset
-- [ ] embarassing parallel (this should be done at shell level with `parallel` linux tool. ask claude)
-- [ ] make indices fill, like 00001, 00020 instead of 1, 20
-- [ ] need to put initial question in system prompt for caching (epistemic status: not 100% sure this is even cheaper)
-- [x] resumes
-- [ ] email zac for nepotism
+### Postprocess
 
-# TODO from 27 Sep
+The last thing is to trim up the artefacts to their huggingface form.
+```
+rye run postprocess
+```
+
+## Reproducing our baselines
+
+TODO
+
+# Notes/misc
+
+## TODO from 27 Sep
 - [ ] 2048 is necessary
 - [ ] ask hypothesizer to only generate strategy tests, ignore unit test cases
 - [ ] refactor restart, loops, indexing
 - [ ] fix logging/conversation json overwriting
 
 
-# Notes from 50/50 Generation
+## Notes from 50/50 Generation
 Running 50 examples (0-49) through preproc, then fvapps
 Preproc
 - 1 fail train, 3 fail test
