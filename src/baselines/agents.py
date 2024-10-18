@@ -33,7 +33,7 @@ class BaselineAgent:
 
     def __init__(
         self,
-        input_context: str,
+        input_context: str | tuple[str, str],
         output_path: Path,
         config: AgentConfig,
         check_previous_stage: bool = True,
@@ -110,7 +110,10 @@ class BaselineAgent:
         return extract_code_block(response, language=self.language)
 
     def format_first_prompt(self) -> str:
-        return self.first_prompt(self.input)
+        if isinstance(self.input, tuple):
+            return self.first_prompt(*self.input)
+        else:
+            return self.first_prompt(self.input)
 
     def loop_init(self) -> tuple[str, str, int]:
         if self.output_path.exists():

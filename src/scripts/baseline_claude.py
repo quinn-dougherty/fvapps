@@ -3,8 +3,10 @@
 import pathlib
 from argparse import ArgumentParser
 
+from datasets import load_dataset
+
 from baselines.agents import AgentConfig, BaselineAgent
-from scripts.config import baselinecfg
+from baselines.config import baselinecfg
 
 
 def mk_parser() -> ArgumentParser:
@@ -28,29 +30,20 @@ def mk_parser() -> ArgumentParser:
     return parser
 
 
-def lean_main(in_path, out_path, sample_idx):
+def lean_main(output_path, question, spec, apps_sample_idx):
 
-    try:
-        with open(in_path, "r") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        print(
-            f"Baseline generation failed, unable to find Spec.lean for sample {sample_idx} at {in_path}"
-        )
-        print(
-            f"Was the final proof generation for sample {sample_idx} successful? False"
-        )
-        return
-
+    print(
+        f"Running LEAN proof for APPS sample {apps_sample_idx} and outputting to {output_path}..."
+    )
     agent = BaselineAgent(
-        input_context=content,
-        output_path=out_path,
-        config=AgentConfig(**baselinecfg, sample_idx=sample_idx),
+        input_context=(question, spec),
+        output_path=output_path,
+        config=AgentConfig(**baselinecfg, sample_idx=apps_sample_idx),
     )
     final_exit_code = agent.loop()
 
     print(
-        f"Was the final LEAN generation for sample {sample_idx} successful? {final_exit_code}"
+        f"Was the final LEAN proof from Sonnet 3.5 for sample {apps_sample_idx} successful? {final_exit_code}"
     )
     return
 
@@ -58,14 +51,19 @@ def lean_main(in_path, out_path, sample_idx):
 def main():
     parser = mk_parser()
     args = parser.parse_args()
-    root_path = pathlib.Path("artefacts") / "apps" / args.split
+
+    ds = load_dataset("quinn-dougherty/fvapps")
+    output_folder = (
+        pathlib.Path("artefacts") / "baselines" / "claude-3.5-sonnet" / args.split
+    )
+    output_folder.mkdir(parents=True, exist_ok=True)
 
     for i in range(args.start_idx, args.end_idx + 1):
-        idx = f"{i:04d}"
-        in_spec_path = root_path / idx / "Spec.lean"
-        out_proof_path = root_path / idx / "Proof.lean"
+        sample = ds[args.split][i]
+        apps_idx = sample["apps_id"]
+        output_path = output_folder / f"Proof_{apps_idx}.Lean"
 
-        lean_main(in_spec_path, out_proof_path, i)
+        lean_main(output_path, sample["apps_question"], sample["spec"], apps_idx)
 
 
 if __name__ == "__main__":
