@@ -10,6 +10,8 @@
 #   universal: false
 
 -e file:.
+accelerate==1.0.1
+    # via fvapps
 aiohappyeyeballs==2.4.0
     # via aiohttp
 aiohttp==3.10.5
@@ -45,12 +47,16 @@ distro==1.9.0
 filelock==3.16.0
     # via datasets
     # via huggingface-hub
+    # via torch
+    # via transformers
+    # via triton
 frozenlist==1.4.1
     # via aiohttp
     # via aiosignal
 fsspec==2024.6.1
     # via datasets
     # via huggingface-hub
+    # via torch
 h11==0.14.0
     # via httpcore
 httpcore==1.0.5
@@ -59,34 +65,79 @@ httpx==0.27.2
     # via anthropic
     # via openai
 huggingface-hub==0.24.7
+    # via accelerate
     # via datasets
     # via tokenizers
+    # via transformers
 idna==3.8
     # via anyio
     # via httpx
     # via requests
     # via yarl
+jinja2==3.1.4
+    # via torch
 jiter==0.5.0
     # via anthropic
     # via openai
 jsonlines==4.0.0
     # via fvapps
+markupsafe==3.0.2
+    # via jinja2
+mpmath==1.3.0
+    # via sympy
 multidict==6.1.0
     # via aiohttp
     # via yarl
 multiprocess==0.70.16
     # via datasets
+networkx==3.4.1
+    # via torch
 numpy==2.1.1
+    # via accelerate
     # via datasets
     # via pandas
     # via pyarrow
+    # via transformers
+nvidia-cublas-cu12==12.4.5.8
+    # via nvidia-cudnn-cu12
+    # via nvidia-cusolver-cu12
+    # via torch
+nvidia-cuda-cupti-cu12==12.4.127
+    # via torch
+nvidia-cuda-nvrtc-cu12==12.4.127
+    # via torch
+nvidia-cuda-runtime-cu12==12.4.127
+    # via torch
+nvidia-cudnn-cu12==9.1.0.70
+    # via torch
+nvidia-cufft-cu12==11.2.1.3
+    # via torch
+nvidia-curand-cu12==10.3.5.147
+    # via torch
+nvidia-cusolver-cu12==11.6.1.9
+    # via torch
+nvidia-cusparse-cu12==12.3.1.170
+    # via nvidia-cusolver-cu12
+    # via torch
+nvidia-nccl-cu12==2.21.5
+    # via torch
+nvidia-nvjitlink-cu12==12.4.127
+    # via nvidia-cusolver-cu12
+    # via nvidia-cusparse-cu12
+    # via torch
+nvidia-nvtx-cu12==12.4.127
+    # via torch
 openai==1.45.0
     # via fvapps
 packaging==24.1
+    # via accelerate
     # via datasets
     # via huggingface-hub
+    # via transformers
 pandas==2.2.2
     # via datasets
+psutil==6.1.0
+    # via accelerate
 pyarrow==17.0.0
     # via datasets
 pydantic==2.9.1
@@ -101,11 +152,21 @@ python-dotenv==1.0.1
 pytz==2024.2
     # via pandas
 pyyaml==6.0.2
+    # via accelerate
     # via datasets
     # via huggingface-hub
+    # via transformers
+regex==2024.9.11
+    # via transformers
 requests==2.32.3
     # via datasets
     # via huggingface-hub
+    # via transformers
+safetensors==0.4.5
+    # via accelerate
+    # via transformers
+setuptools==75.2.0
+    # via torch
 six==1.16.0
     # via python-dateutil
 sniffio==1.3.1
@@ -113,18 +174,30 @@ sniffio==1.3.1
     # via anyio
     # via httpx
     # via openai
+sympy==1.13.1
+    # via torch
 tokenizers==0.20.0
     # via anthropic
+    # via transformers
+torch==2.5.0
+    # via accelerate
+    # via fvapps
 tqdm==4.66.5
     # via datasets
     # via huggingface-hub
     # via openai
+    # via transformers
+transformers==4.45.2
+    # via fvapps
+triton==3.1.0
+    # via torch
 typing-extensions==4.12.2
     # via anthropic
     # via huggingface-hub
     # via openai
     # via pydantic
     # via pydantic-core
+    # via torch
 tzdata==2024.1
     # via pandas
 urllib3==2.2.3

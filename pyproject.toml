@@ -12,6 +12,9 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "openai>=1.44.1",
     "jsonlines>=4.0.0",
+    "transformers>=4.45.2",
+    "torch>=2.5.0",
+    "accelerate>=1.0.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
