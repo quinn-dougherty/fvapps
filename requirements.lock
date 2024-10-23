@@ -127,7 +127,7 @@ nvidia-nvjitlink-cu12==12.4.127
     # via torch
 nvidia-nvtx-cu12==12.4.127
     # via torch
-openai==1.45.0
+openai==1.52.1
     # via fvapps
 packaging==24.1
     # via accelerate
