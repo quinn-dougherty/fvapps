@@ -1,3 +1,6 @@
+# old*
+old*
+
 # test outputs
 artefacts/hypothesis/*.py
 artefacts/lean/*.lean
