@@ -1,19 +1,13 @@
 import json
 import os
-import signal
 import subprocess
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Literal, Union
 
-from anthropic import Anthropic
-from dotenv import load_dotenv
-
 from benchmark.utils.code_blocks import extract_code_block
 from benchmark.utils.logger_setup import logging
-
-load_dotenv()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
 
 @dataclass
@@ -29,7 +23,7 @@ class AgentConfig:
     sample_idx: int | None = None
 
 
-class BaselineAgent:
+class BenchmarkAgent(ABC):
 
     def __init__(
         self,
@@ -48,12 +42,16 @@ class BaselineAgent:
         self.continuous_prompt = config.continuous_prompt
         self.sample_idx = config.sample_idx
 
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        self.client = self.setup_client()
         self.input = input_context
         self.output_path = output_path
         self.conversation: list = []
 
         self.check_previous_stage = check_previous_stage
+
+    @abstractmethod
+    def setup_client(self):
+        pass
 
     def append_user_message(self, message: str):
         entry = {"role": "user", "content": message}
@@ -63,18 +61,9 @@ class BaselineAgent:
         entry = {"role": "assistant", "content": response}
         self.conversation.append(entry)
 
-    def send_appended_user_message(self, message: str, cache: bool = False):
-        self.append_user_message(message)
-        sysprompt = {"type": "text", "text": self.system_prompt("")}
-        if cache:
-            sysprompt["cache-control"] = "ephemeral"
-        response = self.client.beta.prompt_caching.messages.create(
-            model=self.model_name,
-            max_tokens=self.max_tokens_per_completion,
-            system=[sysprompt],  # type: ignore
-            messages=self.conversation,
-        )
-        return response.content[0].text  # type: ignore
+    @abstractmethod
+    def send_appended_user_message(self, message: str) -> str:
+        pass
 
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
