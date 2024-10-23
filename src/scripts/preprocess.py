@@ -52,6 +52,9 @@ def run_AppsPreprocAgent(orig_apps_row, split: str):
     with open(problem_path / "difficulty.txt", "w") as f:
         f.write(sample["difficulty"])
 
+    with open(problem_path / "keep.txt", "w") as f:
+        f.write("1")
+
     test_path = problem_path / "solution_clean.py"
 
     agent = AppsPreprocAgent(

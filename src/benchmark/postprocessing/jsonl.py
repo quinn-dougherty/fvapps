@@ -22,6 +22,11 @@ def process_benchmark_item(idx_dir: Path, split: str) -> dict[str, str] | None:
     spec_file = idx_dir / "Spec.lean"
     question_file = idx_dir / "question.txt"
     difficulty_file = idx_dir / "difficulty.txt"
+    keep_file = idx_dir / "keep.txt"
+
+    with open(keep_file, "r") as f:
+        if not int(f.read()):
+            return None
 
     return {
         "apps_id": idx_dir.name,
