@@ -1,6 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
+from baselines.agents import BenchmarkAgent
+
 # Set the model name
 model_name = "deepseek-ai/DeepSeek-Prover-V1.5-RL"
 

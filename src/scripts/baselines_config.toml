@@ -1,0 +1,20 @@
+[sonnet]
+model_name = "claude-3-5-sonnet-20240620"
+max_tokens_per_completion = 8000
+max_iterations = 5
+language = "lean"
+executable = "lean"
+
+[o1]
+model_name = "claude-3-5-sonnet-20240620"
+max_tokens_per_completion = 8000
+max_iterations = 5
+language = "lean"
+executable = "lean"
+
+[prover_rl]
+model_name = "deepseek-ai/DeepSeek-Prover-V1.5-RL"
+max_tokens_per_completion = 8000
+max_iterations = 5
+language = "lean"
+executable = "lean"

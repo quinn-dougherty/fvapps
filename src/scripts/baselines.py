@@ -5,18 +5,18 @@ from datasets import load_dataset
 
 from baselines.agents import AgentConfig
 from baselines.anthropic_agent import ClaudeAgent
-from baselines.config import claudebaselinecfg, o4_minibaselinecfg
 from baselines.openai_agent import OpenAIAgent
+from scripts.baselines_config import sonnet_baselinecfg, o1_baselinecfg
 
 
 def mk_parser() -> ArgumentParser:
-    parser = ArgumentParser("FVApps Baseliner")
+    parser = ArgumentParser("FVApps Baselines")
     parser.add_argument(
         "--model",
-        help="model name (default: claude-3.5-sonnet)",
+        help="model name (default: sonnet)",
         type=str,
-        default="claude-3.5-sonnet",
-        choices=["claude-3.5-sonnet", "o1-mini"],
+        default="sonnet",
+        choices=["sonnet", "o1-mini"],
     )
     parser.add_argument(
         "--split",
@@ -37,23 +37,32 @@ def mk_parser() -> ArgumentParser:
     return parser
 
 
-def lean_main(output_path, question, spec, apps_sample_idx, model):
+def lean_main(
+    output_path: pathlib.Path,
+    question: str,
+    spec: str,
+    apps_sample_idx: int,
+    model: str,
+):
 
     print(
         f"Running LEAN proof for APPS sample {apps_sample_idx} and outputting to {output_path}..."
     )
-    if model == "claude-3.5-sonnet":
-        agent = ClaudeAgent(
-            input_context=(question, spec),
-            output_path=output_path,
-            config=AgentConfig(**claudebaselinecfg, sample_idx=apps_sample_idx),
-        )
-    elif model == "o1-mini":
-        agent = OpenAIAgent(
-            input_context=(question, spec),
-            output_path=output_path,
-            config=AgentConfig(**o4_minibaselinecfg, sample_idx=apps_sample_idx),
-        )
+    match model:
+        case "sonnet":
+            agent = ClaudeAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**sonnet_baselinecfg, sample_idx=apps_sample_idx),
+            )
+        case "o1-mini":
+            agent = OpenAIAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**o1_baselinecfg, sample_idx=apps_sample_idx),
+            )
+        case _:
+            raise ValueError(f"Model argument {model} incorrect")
     final_exit_code = agent.loop()
 
     print(
@@ -71,14 +80,10 @@ def main():
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for i in range(args.start_idx, args.end_idx + 1):
-        sample = ds[args.split][i]
+        sample = ds[args.split][i]  # type: ignore
         apps_idx = sample["apps_id"]
         output_path = output_folder / f"Proof_{apps_idx}.Lean"
 
         lean_main(
             output_path, sample["apps_question"], sample["spec"], apps_idx, args.model
         )
-
-
-if __name__ == "__main__":
-    main()

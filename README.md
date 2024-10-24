@@ -75,29 +75,25 @@ rye run postprocess
 
 ## Reproducing our baselines
 
-TODO
+```
+$ rye run baselines
+
+TODO : insert `--help` here
+```
 
 # Notes/misc
 
-## TODO from 27 Sep
-- [ ] 2048 is necessary
-- [ ] ask hypothesizer to only generate strategy tests, ignore unit test cases
-- [ ] refactor restart, loops, indexing
-- [ ] fix logging/conversation json overwriting
-
-
 ## Notes from 50/50 Generation
 Running 50 examples (0-49) through preproc, then fvapps
-Preproc
+**Preproc**
 - 1 fail train, 3 fail test
 - almost exactly $3.00 for total Sonnet 3.5 use
 - about 625K tokens in, 77K tokens out
-Fvapps
+**Fvapps**
 - train python 4 fail
 - train lean 5 fail, broke on index 40 because no test_solution because preproc failed (TODO complete)
 - test python hanging at 14 right now
 - test lean TODO
-
 - lots of hanging, some pytest hypotheses take forever
 - we should maybe add timing to the pytests
 - maybe also prompt eng for "fast" tests

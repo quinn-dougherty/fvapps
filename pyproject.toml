@@ -30,6 +30,7 @@ leangen_example = "scripts.example_agent_run:lean_main"
 preprocess = "scripts.preprocess:main"
 fvapps = "scripts.fvapps:main"
 postprocess = "scripts.postprocess:main"
+baselines = "scripts.baselines:main"
 
 [tool.rye]
 managed = true
