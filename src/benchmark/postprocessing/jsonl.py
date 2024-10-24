@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from benchmark.utils.logger_setup import logging
 from benchmark.utils.metadata import read_lean
+from benchmark.postprocessing.metadata import count_sorries
 
 ARTEFACTS = Path("artefacts")
 
@@ -23,6 +24,7 @@ def process_benchmark_item(idx_dir: Path, split: str) -> dict[str, str] | None:
     question_file = idx_dir / "question.txt"
     difficulty_file = idx_dir / "difficulty.txt"
     keep_file = idx_dir / "keep.txt"
+    sorries = count_sorries(idx_dir)
 
     with open(keep_file, "r") as f:
         if not int(f.read()):
@@ -32,6 +34,7 @@ def process_benchmark_item(idx_dir: Path, split: str) -> dict[str, str] | None:
         "apps_id": idx_dir.name,
         "apps_question": read_file_content(question_file),
         "spec": read_file_content(spec_file),
+        "sorries": sorries,
         "apps_difficulty": read_file_content(difficulty_file),
         "split": split,
     }
