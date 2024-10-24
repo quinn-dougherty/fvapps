@@ -3,7 +3,7 @@ import os
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from baselines.agents import BenchmarkAgent
+from baselines.types import BenchmarkAgent
 
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config

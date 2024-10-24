@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from baselines.agents import BenchmarkAgent
+from baselines.types import BenchmarkAgent
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # config
