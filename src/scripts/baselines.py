@@ -3,10 +3,16 @@ from argparse import ArgumentParser
 
 from datasets import load_dataset
 
-from baselines.agents import AgentConfig
+from baselines.types import AgentConfig
 from baselines.anthropic_agent import ClaudeAgent
 from baselines.openai_agent import OpenAIAgent
-from scripts.baselines_config import sonnet_baselinecfg, o1_baselinecfg
+from baselines.huggingface_agent import HuggingFaceAgent
+from scripts.baselines_config import (
+    sonnet_cfg,
+    o1_cfg,
+    prover_rl_cfg,
+    testhf_cfg,
+)
 
 
 def mk_parser() -> ArgumentParser:
@@ -16,7 +22,7 @@ def mk_parser() -> ArgumentParser:
         help="model name (default: sonnet)",
         type=str,
         default="sonnet",
-        choices=["sonnet", "o1-mini"],
+        choices=["sonnet", "o1-mini", "prover-rl", "testhf"],
     )
     parser.add_argument(
         "--split",
@@ -53,20 +59,32 @@ def lean_main(
             agent = ClaudeAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**sonnet_baselinecfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**sonnet_cfg, sample_idx=apps_sample_idx),
             )
         case "o1-mini":
             agent = OpenAIAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**o1_baselinecfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**o1_cfg, sample_idx=apps_sample_idx),
+            )
+        case "prover-rl":
+            agent = HuggingFaceAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**prover_rl_cfg, sample_idx=apps_sample_idx),
+            )
+        case "testhf":
+            agent = HuggingFaceAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**testhf_cfg, sample_idx=apps_sample_idx),
             )
         case _:
             raise ValueError(f"Model argument {model} incorrect")
     final_exit_code = agent.loop()
 
     print(
-        f"Was the final LEAN proof from Sonnet 3.5 for sample {apps_sample_idx} successful? {final_exit_code}"
+        f"Was the final LEAN proof from {model} for sample {apps_sample_idx} successful? {final_exit_code}"
     )
     return
 

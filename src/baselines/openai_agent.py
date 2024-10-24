@@ -3,13 +3,13 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from baselines.types import BenchmarkAgent
+from baselines.types import BaselineAgent
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # config
 
 
-class OpenAIAgent(BenchmarkAgent):
+class OpenAIAgent(BaselineAgent):
 
     def setup_client(self):
         return OpenAI(api_key=OPENAI_API_KEY)

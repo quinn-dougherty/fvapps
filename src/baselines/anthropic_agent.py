@@ -3,13 +3,13 @@ import os
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from baselines.types import BenchmarkAgent
+from baselines.types import BaselineAgent
 
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # config
 
 
-class ClaudeAgent(BenchmarkAgent):
+class ClaudeAgent(BaselineAgent):
 
     def setup_client(self):
         return Anthropic(api_key=ANTHROPIC_API_KEY)

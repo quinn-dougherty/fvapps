@@ -23,7 +23,7 @@ class AgentConfig:
     sample_idx: int | None = None
 
 
-class BenchmarkAgent(ABC):
+class BaselineAgent(ABC):
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ class BenchmarkAgent(ABC):
             return self.run_code(code)
 
         logging.info(
-            f"{self.__class__.__name__} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
+            f"{self.__class__.__name__} {self.model_name} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
         )
         response = self.send_appended_user_message(self.format_first_prompt())
         self.conversation.append({"role": "assistant", "content": response})
@@ -125,7 +125,7 @@ class BenchmarkAgent(ABC):
             return True
         loops_so_far = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            msg = f"{self.executable} sample {self.sample_idx} - Loop {i}/{self.max_iterations}"
+            msg = f"{self.executable} {self.model_name} sample {self.sample_idx} - Loop {i}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
             # if not done, append the response to the conversation and get a new response
