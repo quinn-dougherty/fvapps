@@ -25,4 +25,5 @@ baselinecfg = {
 sonnet_cfg = {**cfg["sonnet"], **baselinecfg}
 o1_cfg = {**cfg["o1"], **baselinecfg}
 prover_rl_cfg = {**cfg["prover_rl"], **baselinecfg}
+llama_cfg = {**cfg["llama"], **baselinecfg}
 testhf_cfg = {**cfg["testhf"], **baselinecfg}

@@ -11,6 +11,7 @@ from scripts.baselines_config import (
     sonnet_cfg,
     o1_cfg,
     prover_rl_cfg,
+    llama_cfg,
     testhf_cfg,
 )
 
@@ -22,7 +23,7 @@ def mk_parser() -> ArgumentParser:
         help="model name (default: sonnet)",
         type=str,
         default="sonnet",
-        choices=["sonnet", "o1-mini", "prover-rl", "testhf"],
+        choices=["sonnet", "o1-mini", "prover-rl", "llama", "testhf"],
     )
     parser.add_argument(
         "--split",
@@ -72,6 +73,12 @@ def lean_main(
                 input_context=(question, spec),
                 output_path=output_path,
                 config=AgentConfig(**prover_rl_cfg, sample_idx=apps_sample_idx),
+            )
+        case "llama":
+            agent = HuggingFaceAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**llama_cfg, sample_idx=apps_sample_idx),
             )
         case "testhf":
             agent = HuggingFaceAgent(
