@@ -8,6 +8,7 @@ artefacts/apps/*
 artefacts/old/*
 artefacts/examples/*
 artefacts/apps_
+artefacts/baselines/*
 !artefacts/examples/*/solution_clean.py
 
 # hypotheses
