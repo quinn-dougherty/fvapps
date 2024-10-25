@@ -14,7 +14,7 @@ executable = "pytest"
 
 [lean_agent]
 model_name = "claude-3-5-sonnet-20241022" # "claude-3-5-sonnet-20240620"
-max_tokens_per_completion = 2024
+max_tokens_per_completion = 2048
 max_iterations = 5
 language = "lean"
 executable = "lean"
