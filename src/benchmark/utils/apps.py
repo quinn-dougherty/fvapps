@@ -1,6 +1,7 @@
 from ast import literal_eval
 from pathlib import Path
 from datasets import Dataset, load_dataset  # type: ignore
+import json
 
 
 HF_DATASET_PATH = "codeparrot/apps"
@@ -21,7 +22,7 @@ def get_single_apps_solution(apps_row: dict) -> str:
 
 
 def get_single_apps_test_cases(apps_row: dict) -> str:
-    return literal_eval(apps_row["input_output"])
+    return json.loads(apps_row["input_output"])
 
 
 def get_succinct_apps_datarow(apps_row: dict) -> dict:
