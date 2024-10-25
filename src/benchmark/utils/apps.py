@@ -21,16 +21,12 @@ def get_single_apps_solution(apps_row: dict) -> str:
         return sols
 
 
-def get_single_apps_test_cases(apps_row: dict) -> str:
-    return json.loads(apps_row["input_output"])
-
-
 def get_succinct_apps_datarow(apps_row: dict) -> dict:
     return {
         "problem_id": apps_row["problem_id"],
         "problem_statement": apps_row["question"],
         "solution": get_single_apps_solution(apps_row),
-        "test_cases": get_single_apps_test_cases(apps_row),
+        "test_cases": apps_row["input_output"],
         "difficulty": apps_row["difficulty"],
     }
 
