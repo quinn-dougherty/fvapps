@@ -11,7 +11,7 @@ tags:
 
 by Ronak Mehta and Quinn Dougherty. Based on APPS by Hendrycks et al.
 
-**BETA/DRAFT** Seeking funding or Anthropic credits to create more samples
+**BETA/DRAFT** 
 
 ## Example task
 
@@ -47,3 +47,5 @@ theorem min_coins_for_votes_no_votes_needed (voters : List (Nat × Nat)) :
 theorem min_coins_for_votes_zero_cost (voters : List (Nat × Nat)) :
   (∀ v ∈ voters, v.2 = 0) → min_coins_for_votes voters = 0 := sorry
 ```
+
+## [Code to generate benchmark and baselines](https://github.com/quinn-dougherty/fvapps)

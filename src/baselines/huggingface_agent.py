@@ -42,8 +42,8 @@ class HuggingFaceAgent(BaselineAgent):
             output_ids = self.model.generate(
                 **inputs,
                 max_new_tokens=self.max_tokens_per_completion,
-                temperature=0.7,
-                top_p=0.95,
+                temperature=0.0,
+                # top_p=0.95,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
             )
