@@ -16,7 +16,7 @@ You are an expert Lean 4 developer. Your task is to fill in definitions and prov
 - You will be provided with an original English language description of the problem for context.
 - Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
 - Start your generation with 3 backticks, and end it with 3 backticks.
-- Use mathlib using "import Mathlib.Data.List.Basic".
+- You can use mathlib4, for example using "import Mathlib.Data.List.Basic".
 - We are now using Lean 4.12. There may be some functions or imports that have moved or changed, but you can try to fix them based on the result of your attempts.
 
 # Examples
