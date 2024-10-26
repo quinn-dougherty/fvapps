@@ -118,8 +118,9 @@ class BaselineAgent(ABC):
         try:
             code = self.extract_code(response)
         except ValueError:
-            logging.warning("No code block found in the response")
-            return "", "No code block found in the response", 1
+            msg = "No code block found in the response"
+            logging.warning(msg)
+            return "", msg, 1
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
 
@@ -148,10 +149,9 @@ class BaselineAgent(ABC):
             try:
                 code = self.extract_code(response)
             except ValueError:
+                msg = "No code block found in the response"
                 logging.warning("No code block found in the response")
-                stdout = ""
-                stderr = "No code block found in the response"
-                returncode = 1
+                stdout, stderr, returncode = "", msg, 1
             else:
                 # subprocess call to run it and track outputs and exit codes
                 stdout, stderr, returncode = self.run_code(code)

@@ -76,25 +76,18 @@ rye run postprocess
 ## Reproducing our baselines
 
 ```
+$ cd artefacts/baselines/solve-fvapps
+$ lake update
 $ rye run baselines
+usage: FVApps Baselines [-h] [--model {sonnet,o1-mini,prover-rl,llama,testhf}] [--split {train,test}]
+                        [--start_idx START_IDX] [--end_idx END_IDX]
 
-TODO : insert `--help` here
+options:
+  -h, --help            show this help message and exit
+  --model {sonnet,o1-mini,prover-rl,llama,testhf}
+                        model name (default: sonnet)
+  --split {train,test}  train or test (default: train)
+  --start_idx START_IDX
+                        index to start pulling from apps
+  --end_idx END_IDX     index to end pulling from apps (inclusive)
 ```
-
-# Notes/misc
-
-## Notes from 50/50 Generation
-Running 50 examples (0-49) through preproc, then fvapps
-**Preproc**
-- 1 fail train, 3 fail test
-- almost exactly $3.00 for total Sonnet 3.5 use
-- about 625K tokens in, 77K tokens out
-**Fvapps**
-- train python 4 fail
-- train lean 5 fail, broke on index 40 because no test_solution because preproc failed (TODO complete)
-- test python hanging at 14 right now
-- test lean TODO
-- lots of hanging, some pytest hypotheses take forever
-- we should maybe add timing to the pytests
-- maybe also prompt eng for "fast" tests
-- probably want to parallelize because of this
