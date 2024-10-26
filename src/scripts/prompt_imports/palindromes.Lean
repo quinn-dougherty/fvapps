@@ -114,9 +114,3 @@ theorem List.isPalindrome_correct [DecidableEq α] (as : List α) : as.isPalindr
   simp [isPalindrome]
   exact Iff.intro (fun h => palindrome_of_eq_reverse h) (fun h => reverse_eq_of_palindrome h)
 
-#eval [1, 2, 1].isPalindrome
-#eval [1, 2, 3, 1].isPalindrome
-
-example : [1, 2, 1].isPalindrome := rfl
-example : [1, 2, 2, 1].isPalindrome := rfl
-example : ![1, 2, 3, 1].isPalindrome := rfl
