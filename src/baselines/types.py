@@ -47,6 +47,9 @@ class BaselineAgent(ABC):
         self.output_path = output_path
         self.conversation: list = []
 
+        self.solve_fvapps = Path("artefacts") / "baselines" / "solve-fvapps"
+        self.basic = self.solve_fvapps / "SolveFvapps" / "Basic.lean"
+
         self.check_previous_stage = check_previous_stage
 
     @abstractmethod
@@ -70,22 +73,19 @@ class BaselineAgent(ABC):
             warning = "Code is the empty string"
             logging.warning(warning)
             return "", warning, 1
-        if "input()" in code or "sys.stdin" in code:
-            warning = "user interaction is not allowed"
-            logging.warning(warning)
-            return "", warning, 1
-        logging.info(f"Writing code to {self.output_path}")
+        logging.info(f"Writing code to {self.solve_fvapps}")
         logging.debug(f"Code:\n{code}")
-        with open(self.output_path, "w") as f:
+        with open(self.basic, "w") as f:
             f.write(code)
-        logging.info(f"Running code with {self.executable}")
+        logging.info(f"Running code with lake build in {self.solve_fvapps}")
         try:
             result = subprocess.run(
-                [self.executable, self.output_path],
+                ["lake", "build"],
                 capture_output=True,
                 text=True,
                 env=os.environ,
                 timeout=5 * 60,
+                cwd=self.solve_fvapps,
             )
         except subprocess.TimeoutExpired:
             logging.warning("Timeout expired")
@@ -119,9 +119,17 @@ class BaselineAgent(ABC):
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
 
+    def copy_basic_to_output(self):
+        with open(self.basic, "r") as f:
+            code = f.read()
+        with open(self.output_path, "w") as f:
+            f.write(code)
+
     def loop(self) -> bool:
         stdout, stderr, returncode = self.loop_init()
-        if self.stopping_condition(returncode):
+        if self.stopping_condition(stdout, returncode):
+            self.save_conversation()
+            self.copy_basic_to_output()
             return True
         loops_so_far = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
@@ -136,12 +144,14 @@ class BaselineAgent(ABC):
 
             # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
-            if self.stopping_condition(returncode):
+            if self.stopping_condition(stdout, returncode):
+                self.copy_basic_to_output()
                 break
 
         self.save_conversation()
         logging.info(f"Final return code: {returncode}")
-        return self.stopping_condition(returncode)
+        self.copy_basic_to_output()
+        return self.stopping_condition(stdout, returncode)
 
     def dump_full_chat_history(self):
         return self.conversation
@@ -153,5 +163,6 @@ class BaselineAgent(ABC):
         ) as f:
             json.dump(self.conversation, f, indent=4)
 
-    def stopping_condition(self, returncode: int) -> bool:
-        return returncode == 0
+    @staticmethod
+    def stopping_condition(stdout: str, returncode: int) -> bool:
+        return returncode == 0 and stdout.count("sorry") == 0

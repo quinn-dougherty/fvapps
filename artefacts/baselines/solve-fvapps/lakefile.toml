@@ -1,0 +1,16 @@
+name = "solve-fvapps"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["SolveFvapps"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "809c3fb3b5c8f5d7dace56e200b426187516535a"
+
+[[lean_lib]]
+name = "SolveFvapps"

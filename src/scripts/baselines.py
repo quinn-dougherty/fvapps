@@ -100,12 +100,12 @@ def main():
     parser = mk_parser()
     args = parser.parse_args()
 
-    ds = load_dataset("quinn-dougherty/fvapps")
+    ds = load_dataset("quinn-dougherty/fvapps", split=args.split)
     output_folder = pathlib.Path("artefacts") / "baselines" / args.model / args.split
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for i in range(args.start_idx, args.end_idx + 1):
-        sample = ds[args.split][i]  # type: ignore
+        sample = ds[i]  # type: ignore
         apps_idx = sample["apps_id"]
         output_path = output_folder / f"Proof_{apps_idx}.Lean"
 
