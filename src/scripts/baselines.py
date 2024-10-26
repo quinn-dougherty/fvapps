@@ -3,15 +3,15 @@ from argparse import ArgumentParser
 
 from datasets import load_dataset
 
-from baselines.types import AgentConfig
 from baselines.anthropic_agent import ClaudeAgent
-from baselines.openai_agent import OpenAIAgent
 from baselines.huggingface_agent import HuggingFaceAgent
+from baselines.openai_agent import OpenAIAgent
+from baselines.types import AgentConfig
 from scripts.baselines_config import (
-    sonnet_cfg,
+    llama_cfg,
     o1_cfg,
     prover_rl_cfg,
-    llama_cfg,
+    sonnet_cfg,
     testhf_cfg,
 )
 
@@ -27,9 +27,9 @@ def mk_parser() -> ArgumentParser:
     )
     parser.add_argument(
         "--split",
-        help="train or test (default: train)",
+        help="train (default: train)",
         type=str,
-        choices=["train", "test"],
+        choices=["train"],
         default="train",
     )
     parser.add_argument(
