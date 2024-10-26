@@ -2,7 +2,7 @@
 old*
 
 # test outputs
-artefacts
+artefacts/
 !artefacts/baselines/solve-fvapps
 
 # hypotheses

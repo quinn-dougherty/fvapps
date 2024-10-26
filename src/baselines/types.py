@@ -115,7 +115,11 @@ class BaselineAgent(ABC):
         )
         response = self.send_appended_user_message(self.format_first_prompt())
         self.conversation.append({"role": "assistant", "content": response})
-        code = self.extract_code(response)
+        try:
+            code = self.extract_code(response)
+        except ValueError:
+            logging.warning("No code block found in the response")
+            return "", "No code block found in the response", 1
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
 
@@ -140,10 +144,17 @@ class BaselineAgent(ABC):
             # with secondary prompt scaffold
             response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
             self.append_assistant_message(response)
-            code = self.extract_code(response)
 
-            # subprocess call to run it and track outputs and exit codes
-            stdout, stderr, returncode = self.run_code(code)
+            try:
+                code = self.extract_code(response)
+            except ValueError:
+                logging.warning("No code block found in the response")
+                stdout = ""
+                stderr = "No code block found in the response"
+                returncode = 1
+            else:
+                # subprocess call to run it and track outputs and exit codes
+                stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(stdout, returncode):
                 self.copy_basic_to_output()
                 break
