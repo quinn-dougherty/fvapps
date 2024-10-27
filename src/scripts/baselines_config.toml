@@ -12,6 +12,11 @@ max_iterations = 5
 model_name = "claude-3-5-sonnet-20240620"
 max_tokens_per_completion = 8000
 
+[gemini]
+max_iterations = 5
+model_name = "gemini-1.5-pro"
+max_tokens_per_completion = 8000
+
 [prover_rl]
 max_iterations = 100
 model_name = "deepseek-ai/DeepSeek-Prover-V1.5-RL"

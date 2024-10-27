@@ -64,6 +64,7 @@ Please fix your original output, again only generating code within the 3 backtic
 
 sonnet_cfg = {**cfg["sonnet"], **baselinecfg}
 o1_cfg = {**cfg["o1"], **baselinecfg}
+gemini_cfg = {**cfg["gemini"], **baselinecfg}
 prover_rl_cfg = {**cfg["prover_rl"], **baselinecfg}
 llama_cfg = {**cfg["llama"], **baselinecfg}
 testhf_cfg = {**cfg["testhf"], **baselinecfg}
