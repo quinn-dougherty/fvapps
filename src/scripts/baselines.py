@@ -4,10 +4,12 @@ from argparse import ArgumentParser
 from datasets import load_dataset
 
 from baselines.anthropic_agent import ClaudeAgent
+from baselines.google_agent import GoogleAgent
 from baselines.huggingface_agent import HuggingFaceAgent
 from baselines.openai_agent import OpenAIAgent
 from baselines.types import AgentConfig
 from scripts.baselines_config import (
+    gemini_cfg,
     llama_cfg,
     o1_cfg,
     prover_rl_cfg,
@@ -23,7 +25,7 @@ def mk_parser() -> ArgumentParser:
         help="model name (default: sonnet)",
         type=str,
         default="sonnet",
-        choices=["sonnet", "o1-mini", "prover-rl", "llama", "testhf"],
+        choices=["sonnet", "o1-mini", "gemini", "prover-rl", "llama", "testhf"],
     )
     parser.add_argument(
         "--split",
@@ -67,6 +69,12 @@ def lean_main(
                 input_context=(question, spec),
                 output_path=output_path,
                 config=AgentConfig(**o1_cfg, sample_idx=apps_sample_idx),
+            )
+        case "gemini":
+            agent = GoogleAgent(
+                input_context=(question, spec),
+                output_path=output_path,
+                config=AgentConfig(**gemini_cfg, sample_idx=apps_sample_idx),
             )
         case "prover-rl":
             agent = HuggingFaceAgent(

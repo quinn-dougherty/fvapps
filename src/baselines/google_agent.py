@@ -9,7 +9,7 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # config
 
 
-class ClaudeAgent(BaselineAgent):
+class GoogleAgent(BaselineAgent):
 
     def setup_client(self):
         genai.configure(api_key=GOOGLE_API_KEY)
