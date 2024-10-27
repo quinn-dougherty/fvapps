@@ -1,12 +1,15 @@
 from ast import literal_eval
 from pathlib import Path
 from datasets import Dataset, load_dataset  # type: ignore
-import json
 
 
 HF_DATASET_PATH = "codeparrot/apps"
 
 ALL_DIFFICULTIES = ["introductory", "interview", "competition"]
+
+# Maximum number of characters to include in the test cases
+# Some of the test cases are too long to be included in context windows
+MAX_CHAR_TEST_CASES = 100_000
 
 
 def load_hf_apps_dataset(split: str = "train", difficulties: list = ALL_DIFFICULTIES):
@@ -26,7 +29,7 @@ def get_succinct_apps_datarow(apps_row: dict) -> dict:
         "problem_id": apps_row["problem_id"],
         "problem_statement": apps_row["question"],
         "solution": get_single_apps_solution(apps_row),
-        "test_cases": apps_row["input_output"],
+        "test_cases": apps_row["input_output"][:MAX_CHAR_TEST_CASES],
         "difficulty": apps_row["difficulty"],
     }
 
