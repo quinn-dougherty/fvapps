@@ -114,7 +114,7 @@ class BaselineAgent(ABC):
             f"{self.__class__.__name__} {self.model_name} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
         )
         response = self.send_appended_user_message(self.format_first_prompt())
-        self.conversation.append({"role": "assistant", "content": response})
+        self.append_assistant_message(response)
         try:
             code = self.extract_code(response)
         except ValueError:
