@@ -75,10 +75,18 @@ rye run postprocess
 
 ## Reproducing our baselines
 
+Install `elan`, `rye`, do your `$PATH` munging, and source `.venv/bin/activate`.
+
+First, you need to install mathlib with `lake update`. This will pull the mathlib precompile cache, too, but if it doesn't and you find yourself waiting for mathlib to compile, run `lake exe cache get` in the lake project.
+
+`--model {llama,prover-rl}` require local GPU, the others require API keys.
+
 ```
+$ rye sync
 $ cd artefacts/baselines/solve-fvapps
 $ lake update
-$ rye run baselines
+$ cd ./../../../
+$ rye run baselines --help
 usage: FVApps Baselines [-h] [--model {sonnet,o1-mini,prover-rl,llama,testhf}] [--split {train,test}]
                         [--start_idx START_IDX] [--end_idx END_IDX]
 
