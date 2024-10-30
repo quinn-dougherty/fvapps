@@ -87,7 +87,7 @@ $ cd artefacts/baselines/solve-fvapps
 $ lake update
 $ cd ./../../../
 $ rye run baselines --help
-usage: FVApps Baselines [-h] [--model {sonnet,o1-mini,prover-rl,llama,testhf}] [--split {train,test}]
+usage: FVApps Baselines [-h] [--model {sonnet,o1-mini,gemini,prover-rl,llama,testhf}] [--split {train,test}]
                         [--start_idx START_IDX] [--end_idx END_IDX]
 
 options:

@@ -1,2 +1,6 @@
-session | minutes
-1 | 75
+| session | minutes | notes |
+| ------- | ------- | ----- |
+| 1       | 75      | |
+| 2       | 90      | done problem up to unit tests. now must factor into recursion for proof ergonomics |
+| 3       | 210     | |
+| 4       | 75      | |
