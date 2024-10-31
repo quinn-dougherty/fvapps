@@ -4,7 +4,7 @@ executable = "lean"
 
 [sonnet]
 max_iterations = 5
-model_name = "claude-3-5-sonnet-20240620"
+model_name = "claude-3-5-sonnet-20241022"
 max_tokens_per_completion = 8000 # api limit is here
 
 [o1]

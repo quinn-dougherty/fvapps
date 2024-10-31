@@ -7,7 +7,7 @@ from baselines.anthropic_agent import ClaudeAgent
 from baselines.google_agent import GoogleAgent
 from baselines.huggingface_agent import HuggingFaceAgent
 from baselines.openai_agent import OpenAIAgent
-from baselines.types import AgentConfig
+from baselines.types import AgentConfig, BaselineAgent
 from scripts.baselines_config import (
     gemini_cfg,
     llama_cfg,
@@ -50,58 +50,94 @@ def lean_main(
     output_path: pathlib.Path,
     question: str,
     spec: str,
-    apps_sample_idx: int,
+    debug_string: str,
     model: str,
 ):
 
-    print(
-        f"Running LEAN proof for APPS sample {apps_sample_idx} and outputting to {output_path}..."
-    )
+    agent: BaselineAgent
+
+    config_dict = {
+        "debug_string": debug_string,
+        "custom_stopping_condition": lambda stdout, returncode: not stdout.contains(
+            "sorry"
+        ),
+        # "custom_stopping_condition": lambda stdout, returncode: True,
+    }
+
     match model:
         case "sonnet":
             agent = ClaudeAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**sonnet_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(sonnet_cfg | config_dict)),
             )
         case "o1-mini":
             agent = OpenAIAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**o1_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(o1_cfg | config_dict)),
             )
         case "gemini":
             agent = GoogleAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**gemini_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(gemini_cfg | config_dict)),
             )
         case "prover-rl":
             agent = HuggingFaceAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**prover_rl_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(prover_rl_cfg | config_dict)),
             )
         case "llama":
             agent = HuggingFaceAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**llama_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(llama_cfg | config_dict)),
             )
         case "testhf":
             agent = HuggingFaceAgent(
                 input_context=(question, spec),
                 output_path=output_path,
-                config=AgentConfig(**testhf_cfg, sample_idx=apps_sample_idx),
+                config=AgentConfig(**(testhf_cfg | config_dict)),
             )
         case _:
             raise ValueError(f"Model argument {model} incorrect")
-    final_exit_code = agent.loop()
+    final_exit_code, code = agent.loop()
 
-    print(
-        f"Was the final LEAN proof from {model} for sample {apps_sample_idx} successful? {final_exit_code}"
-    )
-    return
+    return final_exit_code, code
+
+
+def def_extractor(spec: str) -> str:
+    """
+    This function extracts all definitions in the spec (assumes defs are at the start and first theorem statements ends defs)
+    """
+    first_theorem_pos = spec.find("theorem")
+    return spec[:first_theorem_pos]
+
+
+def theorem_extractor(spec: str, theorem_idx: int) -> str:
+    """
+    This function extracts all definitions alongside the theorem at the given index
+    """
+    lines = spec.split("\n\n")
+
+    theorem_starts = [
+        lines[i] for i, statement in enumerate(lines) if statement.startswith("theorem")
+    ]
+
+    thm_lines = [theorem_starts[theorem_idx]]
+    for line in lines[lines.index(theorem_starts[theorem_idx]) + 1 :]:
+        if line.startswith("theorem"):
+            break
+        thm_lines.append(line)
+    theorem = "\n".join(thm_lines)
+
+    return theorem
+
+
+def update_code(code: str, theorem_spec: str) -> str:
+    return code + "\n\n" + theorem_spec
 
 
 def main():
@@ -115,8 +151,48 @@ def main():
     for i in range(args.start_idx, args.end_idx + 1):
         sample = ds[i]  # type: ignore
         apps_idx = sample["apps_id"]
-        output_path = output_folder / f"Proof_{apps_idx}.Lean"
 
-        lean_main(
-            output_path, sample["apps_question"], sample["spec"], apps_idx, args.model
+        def_spec = def_extractor(sample["spec"])
+
+        output_path = output_folder / f"Defs_{apps_idx}.Lean"
+
+        debug_string = f"sample {apps_idx} (defs)"
+        print(
+            f"Running LEAN proof for APPS sample {debug_string} and outputting to {output_path}..."
         )
+        final_exit_code, code = lean_main(
+            output_path, sample["apps_question"], def_spec, debug_string, args.model
+        )
+        print(
+            f"Was the final LEAN proof from {args.model} for {debug_string} successful? {final_exit_code}"
+        )
+
+        code = output_path.read_text()
+
+        # wipe any theorems added previously
+        code = def_extractor(code)
+
+        total_theorem_count = sample["spec"].count("theorem")
+
+        for theorem_idx in range(total_theorem_count):
+            theorem_spec = theorem_extractor(sample["spec"], theorem_idx)
+            code = update_code(code, theorem_spec)
+
+            output_path = output_folder / f"Proof_{apps_idx}_Theorem_{theorem_idx}.Lean"
+
+            debug_string = f"sample {apps_idx} (theorem {theorem_idx})"
+            print(
+                f"Running LEAN proof for APPS sample {debug_string} and outputting to {output_path}..."
+            )
+
+            final_exit_code, code = lean_main(
+                output_path,
+                sample["apps_question"],
+                code,
+                debug_string,
+                args.model,
+            )
+
+            print(
+                f"Was the final LEAN proof from {args.model} for {debug_string} successful? {final_exit_code}"
+            )

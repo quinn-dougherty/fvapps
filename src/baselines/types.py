@@ -4,7 +4,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Literal, Union
+from typing import Callable, Literal, Optional, Union
 
 from benchmark.utils.code_blocks import extract_code_block
 from benchmark.utils.logger_setup import logging
@@ -20,7 +20,9 @@ class AgentConfig:
     system_prompt: Callable[..., str]
     first_prompt: Callable[..., str]
     continuous_prompt: Callable[..., str]
-    sample_idx: int | None = None
+    debug_string: Optional[str] = None
+    custom_stopping_condition: Optional[Callable[[str, int], bool]] = None
+    overwrite: bool = False
 
 
 class BaselineAgent(ABC):
@@ -40,11 +42,18 @@ class BaselineAgent(ABC):
         self.system_prompt = config.system_prompt
         self.first_prompt = config.first_prompt
         self.continuous_prompt = config.continuous_prompt
-        self.sample_idx = config.sample_idx
+        self.debug_string = config.debug_string
 
+        self.custom_stopping_condition: Callable[[str, int], bool] = (
+            config.custom_stopping_condition
+            if config.custom_stopping_condition
+            else lambda _: True  # type: ignore
+        )
+        self.compress_build_output = True
         self.client = self.setup_client()
         self.input = input_context
         self.output_path = output_path
+        self.overwrite = config.overwrite
         self.conversation: list = []
 
         self.solve_fvapps = Path("artefacts") / "baselines" / "solve-fvapps"
@@ -93,6 +102,12 @@ class BaselineAgent(ABC):
         logging.info(f"returncode: {result.returncode}")
         logging.info(f"stderr:\n{result.stderr}")
         logging.info(f"stdout:\n{result.stdout}")
+
+        if self.compress_build_output and result.returncode != 0:
+            # remove the first few lines of the output until we find "error"
+            # this is to remove the lake build header and any other cruft
+            result.stdout = result.stdout[result.stdout.find("error") :]
+
         return result.stdout, result.stderr, result.returncode
 
     def extract_code(self, response: str):
@@ -105,13 +120,13 @@ class BaselineAgent(ABC):
             return self.first_prompt(self.input)
 
     def loop_init(self) -> tuple[str, str, int]:
-        if self.output_path.exists():
+        if self.output_path.exists() and not self.overwrite:
             with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
 
         logging.info(
-            f"{self.__class__.__name__} {self.model_name} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
+            f"{self.__class__.__name__} {self.model_name} {self.debug_string} - Loop 0/{self.max_iterations} (initial)"
         )
         response = self.send_appended_user_message(self.format_first_prompt())
         self.append_assistant_message(response)
@@ -130,15 +145,21 @@ class BaselineAgent(ABC):
         with open(self.output_path, "w") as f:
             f.write(code)
 
-    def loop(self) -> bool:
+    def loop(self) -> tuple[bool, str]:
+        """
+        Returns a tuple of a boolean and a string.
+        The boolean is True if the stopping condition is met, False otherwise.
+        The string is the code that was produced if the stopping condition is met,
+        or an empty string otherwise.
+        """
         stdout, stderr, returncode = self.loop_init()
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
             self.copy_basic_to_output()
-            return True
+            return True, ""
         loops_so_far = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            msg = f"{self.executable} {self.model_name} sample {self.sample_idx} - Loop {i}/{self.max_iterations}"
+            msg = f"{self.executable} {self.model_name} {self.debug_string} - Loop {i}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
             # if not done, append the response to the conversation and get a new response
@@ -162,7 +183,7 @@ class BaselineAgent(ABC):
         self.save_conversation()
         logging.info(f"Final return code: {returncode}")
         self.copy_basic_to_output()
-        return self.stopping_condition(stdout, returncode)
+        return self.stopping_condition(stdout, returncode), code
 
     def dump_full_chat_history(self):
         return self.conversation
@@ -174,6 +195,5 @@ class BaselineAgent(ABC):
         ) as f:
             json.dump(self.conversation, f, indent=4)
 
-    @staticmethod
-    def stopping_condition(stdout: str, returncode: int) -> bool:
-        return returncode == 0 and stdout.count("sorry") == 0
+    def stopping_condition(self, stdout: str, returncode: int) -> bool:
+        return self.custom_stopping_condition(stdout, returncode) and returncode == 0

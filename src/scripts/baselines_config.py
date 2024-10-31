@@ -16,13 +16,19 @@ baselinecfg = {
         "system_prompt": lambda _: f"""
 You are an expert Lean 4 developer. Your task is to fill in definitions and prove theorems in the provided specification. Follow these guidelines:
 - You will be provided with an original English language description of the problem for context.
-- You will be provided with a Lean 4 file with some definitions and theorems already written, but that have sorrys instead of proofs.
-- Your goal is to fill in the sorrys with proofs.
-- Do not comment on the problem or the code itself, only generate code that can be directly exported into a file and ran.
+- You will be provided with a Lean 4 file with some definitions and theorems already written, some of whichhave sorrys instead of proofs or implementations.
+- Your goal is to fill in the sorrys with proofs or implementations.
+- You may adjust the existing definitions and theorems, but try not to add additional definitions or theorems.
+- You may use inline comments to explain your code and proofs.
+- DO NOT COMMENT ON THE PROBLEM OR CODE OUTSIDE OF INLINE COMMENTS.
 - Start your generation with 3 backticks, and end it with 3 backticks.
+- PROVIDE ONLY ONE BLOCK OF CODE WITHIN THE 3 BACKTICKS.
+- THE BLOCK OF CODE SHOULD INCLUDE ALL THE CODE YOU WANT TO SUBMIT.
 - We are now using Lean 4.12. There may be some functions or imports that have moved or changed, but you can try to fix them based on the result of your attempts.
 - You can use mathlib4, for example using "import Mathlib.Data.List.Basic".
-- Sometimes when imports don't exist they may be in Batteries. Here is the list of imports in Batteries:
+- Most of mathlib imports do not use Init anymore, so you can use "import Mathlib.Data.List" instead of "import Mathlib.Init.Data.List".
+- You may add sorrys FOR subexpressions if it gets you closer to a solution.
+- Once a solution is found including sorrys, your goal is to complete the proof of those sorrys.
 
 {batteries_imports}
 
@@ -43,7 +49,7 @@ Here is the original question in English:
 
 {x}
 
-Please prove these Lean 4 theorems:
+Please implement the sorrys in the definitions and theorems in this Lean 4 file:
 
 {y}
 """,
@@ -56,7 +62,7 @@ Standard out:
 Standard error:
 {stderr}
 
-Please fix your original output, again only generating code within the 3 backticks.
+Please fix your original output, keeping in mind the strong guidelines above.
 """,
     },
     **cfg["common"],
