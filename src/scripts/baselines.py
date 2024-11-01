@@ -43,6 +43,11 @@ def mk_parser() -> ArgumentParser:
         type=int,
         default=int(1e4 / 2),
     )
+    parser.add_argument(
+        "--use_apps_ids",
+        help="use apps ids instead of indices",
+        action="store_true",
+    )
     return parser
 
 
@@ -58,9 +63,7 @@ def lean_main(
 
     config_dict = {
         "debug_string": debug_string,
-        "custom_stopping_condition": lambda stdout, returncode: not stdout.contains(
-            "sorry"
-        ),
+        "custom_stopping_condition": lambda stdout, returncode: "sorry" not in stdout,
         # "custom_stopping_condition": lambda stdout, returncode: True,
     }
 
@@ -149,8 +152,15 @@ def main():
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for i in range(args.start_idx, args.end_idx + 1):
-        sample = ds[i]  # type: ignore
-        apps_idx = sample["apps_id"]
+
+        if args.use_apps_ids:
+            sample = ds.to_pandas()
+            sample.set_index("apps_id", inplace=True)
+            sample = sample.loc[f"{i:04d}"]
+            apps_idx = i
+        else:
+            sample = ds[i]  # type: ignore
+            apps_idx = sample["apps_id"]
 
         def_spec = def_extractor(sample["spec"])
 

@@ -25,7 +25,7 @@ You are an expert Lean 4 developer. Your task is to fill in definitions and prov
 - PROVIDE ONLY ONE BLOCK OF CODE WITHIN THE 3 BACKTICKS.
 - THE BLOCK OF CODE SHOULD INCLUDE ALL THE CODE YOU WANT TO SUBMIT.
 - We are now using Lean 4.12. There may be some functions or imports that have moved or changed, but you can try to fix them based on the result of your attempts.
-- You can use mathlib4, for example using "import Mathlib.Data.List.Basic".
+- You may use mathlib4 if absolutely necessary, for example using "import Mathlib.Data.List.Basic".
 - Most of mathlib imports do not use Init anymore, so you can use "import Mathlib.Data.List" instead of "import Mathlib.Init.Data.List".
 - You may add sorrys FOR subexpressions if it gets you closer to a solution.
 - Once a solution is found including sorrys, your goal is to complete the proof of those sorrys.
