@@ -124,10 +124,9 @@ class BaselineAgent(ABC):
             with open(self.output_path, "r") as f:
                 code = f.read()
             return self.run_code(code)
-
-        logging.info(
-            f"{self.__class__.__name__} {self.model_name} {self.debug_string} - Loop 0/{self.max_iterations} (initial)"
-        )
+        msg = f"{self.__class__.__name__} {self.model_name} {self.debug_string} - Loop 0/{self.max_iterations} (initial)"
+        logging.info(msg)
+        print(msg)
         response = self.send_appended_user_message(self.format_first_prompt())
         self.append_assistant_message(response)
         try:
@@ -139,12 +138,6 @@ class BaselineAgent(ABC):
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
 
-    def copy_basic_to_output(self):
-        with open(self.basic, "r") as f:
-            code = f.read()
-        with open(self.output_path, "w") as f:
-            f.write(code)
-
     def loop(self) -> tuple[bool, str, int]:
         """
         Returns a tuple of a boolean and a string.
@@ -152,14 +145,15 @@ class BaselineAgent(ABC):
         The string is the code that was produced if the stopping condition is met,
         or an empty string otherwise.
         """
+        log_prefix = f"{self.executable} {self.model_name} {self.debug_string}"
         stdout, stderr, returncode = self.loop_init()
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
             self.copy_basic_to_output()
             return True, "", 1
-        loops_so_far = 1
+        loops_so_far = i = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
-            msg = f"{self.executable} {self.model_name} {self.debug_string} - Loop {i}/{self.max_iterations}"
+            msg = f"{log_prefix} - Loop {i}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
             # if not done, append the response to the conversation and get a new response
@@ -170,20 +164,27 @@ class BaselineAgent(ABC):
             try:
                 code = self.extract_code(response)
             except ValueError:
+                code = ""
                 msg = "No code block found in the response"
-                logging.warning("No code block found in the response")
+                logging.warning(msg)
                 stdout, stderr, returncode = "", msg, 1
             else:
                 # subprocess call to run it and track outputs and exit codes
                 stdout, stderr, returncode = self.run_code(code)
-            if self.stopping_condition(stdout, returncode):
                 self.copy_basic_to_output()
+            if self.stopping_condition(stdout, returncode):
                 break
 
         self.save_conversation()
-        logging.info(f"Final return code: {returncode}")
+        logging.info(f"{log_prefix} - Final return code: {returncode}")
         self.copy_basic_to_output()
         return self.stopping_condition(stdout, returncode), code, i
+
+    def copy_basic_to_output(self):
+        with open(self.basic, "r") as f:
+            code = f.read()
+        with open(self.output_path, "w") as f:
+            f.write(code)
 
     def dump_full_chat_history(self):
         return self.conversation
@@ -194,7 +195,8 @@ class BaselineAgent(ABC):
                 json.dump(self.conversation, f, indent=4)
         else:
             with open(
-                self.output_path.parent / f"{self.__class__.__name__}_conversation.json",
+                self.output_path.parent
+                / f"{self.__class__.__name__}_conversation.json",
                 "w",
             ) as f:
                 json.dump(self.conversation, f, indent=4)

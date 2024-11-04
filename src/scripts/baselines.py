@@ -86,6 +86,7 @@ def get_or_setup_metadata(output_folder: pathlib.Path, sample: dict) -> dict:
 
     return metadata
 
+
 def lean_main(
     output_path: pathlib.Path,
     question: str,
@@ -144,17 +145,19 @@ def main():
     args = parser.parse_args()
 
     ds = load_dataset("quinn-dougherty/fvapps", split=args.split)
-    output_folder_trunk = pathlib.Path("artefacts") / "baselines" / args.model / args.split
+    output_folder_trunk = (
+        pathlib.Path("artefacts") / "baselines" / args.model / args.split
+    )
 
     for i in range(args.start_idx, args.end_idx + 1):
         if args.use_apps_ids:
+            apps_idx = f"{i:04d}"
             try:
                 samples = ds.to_pandas()
                 samples.set_index("apps_id", inplace=True)
-                sample = samples.loc[f"{i:04d}"]
-                apps_idx = f"{i:04d}"
+                sample = samples.loc[apps_idx]
             except KeyError:
-                print(f"Apps ID {i:04d} not found")
+                print(f"Apps ID {apps_idx} not found")
                 continue
         else:
             try:
@@ -198,7 +201,7 @@ def main():
 
             if result_flag:
                 metadata["all_defs_proven"] = True
-            
+
             with open(output_folder / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=4)
 
@@ -206,7 +209,9 @@ def main():
             with open(def_output_path, "r") as f:
                 code = f.read()
         except FileNotFoundError:
-            print(f"No Defs.lean found for {apps_idx}, even though all defs should be proven by metadata.")
+            print(
+                f"No Defs.lean found for {apps_idx}, even though all defs should be proven by metadata."
+            )
             continue
 
         total_theorem_count = metadata["total_theorems"]
