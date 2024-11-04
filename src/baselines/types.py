@@ -145,7 +145,7 @@ class BaselineAgent(ABC):
         with open(self.output_path, "w") as f:
             f.write(code)
 
-    def loop(self) -> tuple[bool, str]:
+    def loop(self) -> tuple[bool, str, int]:
         """
         Returns a tuple of a boolean and a string.
         The boolean is True if the stopping condition is met, False otherwise.
@@ -156,7 +156,7 @@ class BaselineAgent(ABC):
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
             self.copy_basic_to_output()
-            return True, ""
+            return True, "", 1
         loops_so_far = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
             msg = f"{self.executable} {self.model_name} {self.debug_string} - Loop {i}/{self.max_iterations}"
@@ -183,17 +183,21 @@ class BaselineAgent(ABC):
         self.save_conversation()
         logging.info(f"Final return code: {returncode}")
         self.copy_basic_to_output()
-        return self.stopping_condition(stdout, returncode), code
+        return self.stopping_condition(stdout, returncode), code, i
 
     def dump_full_chat_history(self):
         return self.conversation
 
-    def save_conversation(self):
-        with open(
-            self.output_path.parent / f"{self.__class__.__name__}_conversation.json",
-            "w",
-        ) as f:
-            json.dump(self.conversation, f, indent=4)
+    def save_conversation(self, filename: Optional[str] = None):
+        if filename:
+            with open(filename, "w") as f:
+                json.dump(self.conversation, f, indent=4)
+        else:
+            with open(
+                self.output_path.parent / f"{self.__class__.__name__}_conversation.json",
+                "w",
+            ) as f:
+                json.dump(self.conversation, f, indent=4)
 
     def stopping_condition(self, stdout: str, returncode: int) -> bool:
         return self.custom_stopping_condition(stdout, returncode) and returncode == 0

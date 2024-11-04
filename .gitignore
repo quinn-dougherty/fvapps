@@ -5,6 +5,9 @@ old*
 artefacts/
 !artefacts/baselines/solve-fvapps
 
+# zipped artifacts
+*.tar.gz
+
 # hypotheses
 .hypothesis/
 

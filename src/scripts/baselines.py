@@ -1,21 +1,11 @@
+import json
+import jsonlines
 import pathlib
 from argparse import ArgumentParser
 
 from datasets import load_dataset
 
-from baselines.anthropic_agent import ClaudeAgent
-from baselines.google_agent import GoogleAgent
-from baselines.huggingface_agent import HuggingFaceAgent
-from baselines.openai_agent import OpenAIAgent
-from baselines.types import AgentConfig, BaselineAgent
-from scripts.baselines_config import (
-    gemini_cfg,
-    llama_cfg,
-    o1_cfg,
-    prover_rl_cfg,
-    sonnet_cfg,
-    testhf_cfg,
-)
+from baselines import build_agent
 
 
 def mk_parser() -> ArgumentParser:
@@ -51,6 +41,51 @@ def mk_parser() -> ArgumentParser:
     return parser
 
 
+def get_or_setup_metadata(output_folder: pathlib.Path, sample: dict) -> dict:
+
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    metadata_path = output_folder / "metadata.json"
+
+    if metadata_path.exists():
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
+    else:
+        metadata = {}
+        metadata["total_attempts_made"] = 0
+
+        lines = sample["spec"].split("\n\n")
+
+        theorem_count = len(
+            [
+                lines[i]
+                for i, statement in enumerate(lines)
+                if statement.startswith("theorem")
+            ]
+        )
+        def_count = len(
+            [
+                lines[i]
+                for i, statement in enumerate(lines)
+                if statement.startswith("def")
+            ]
+        )
+
+        metadata["total_theorems_plus_defs"] = theorem_count + def_count
+        metadata["total_theorems"] = theorem_count
+        metadata["all_defs_proven"] = False
+        metadata["defs_attempts"] = 0
+        metadata["theorems_proven"] = 0
+
+        for i in range(theorem_count):
+            metadata[f"theorem_{i}_proven"] = False
+            metadata[f"theorem_{i}_attempts"] = 0
+
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=4)
+
+    return metadata
+
 def lean_main(
     output_path: pathlib.Path,
     question: str,
@@ -59,56 +94,17 @@ def lean_main(
     model: str,
 ):
 
-    agent: BaselineAgent
-
     config_dict = {
         "debug_string": debug_string,
         "custom_stopping_condition": lambda stdout, returncode: "sorry" not in stdout,
         # "custom_stopping_condition": lambda stdout, returncode: True,
     }
 
-    match model:
-        case "sonnet":
-            agent = ClaudeAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(sonnet_cfg | config_dict)),
-            )
-        case "o1-mini":
-            agent = OpenAIAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(o1_cfg | config_dict)),
-            )
-        case "gemini":
-            agent = GoogleAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(gemini_cfg | config_dict)),
-            )
-        case "prover-rl":
-            agent = HuggingFaceAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(prover_rl_cfg | config_dict)),
-            )
-        case "llama":
-            agent = HuggingFaceAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(llama_cfg | config_dict)),
-            )
-        case "testhf":
-            agent = HuggingFaceAgent(
-                input_context=(question, spec),
-                output_path=output_path,
-                config=AgentConfig(**(testhf_cfg | config_dict)),
-            )
-        case _:
-            raise ValueError(f"Model argument {model} incorrect")
-    final_exit_code, code = agent.loop()
+    agent = build_agent(model, (question, spec), output_path, config_dict)
 
-    return final_exit_code, code
+    result_flag, code, n_attempts = agent.loop()
+
+    return result_flag, code, n_attempts
 
 
 def def_extractor(spec: str) -> str:
@@ -148,54 +144,91 @@ def main():
     args = parser.parse_args()
 
     ds = load_dataset("quinn-dougherty/fvapps", split=args.split)
-    output_folder = pathlib.Path("artefacts") / "baselines" / args.model / args.split
-    output_folder.mkdir(parents=True, exist_ok=True)
+    output_folder_trunk = pathlib.Path("artefacts") / "baselines" / args.model / args.split
 
     for i in range(args.start_idx, args.end_idx + 1):
-
         if args.use_apps_ids:
-            sample = ds.to_pandas()
-            sample.set_index("apps_id", inplace=True)
-            sample = sample.loc[f"{i:04d}"]
-            apps_idx = i
+            try:
+                samples = ds.to_pandas()
+                samples.set_index("apps_id", inplace=True)
+                sample = samples.loc[f"{i:04d}"]
+                apps_idx = f"{i:04d}"
+            except KeyError:
+                print(f"Apps ID {i:04d} not found")
+                continue
         else:
-            sample = ds[i]  # type: ignore
-            apps_idx = sample["apps_id"]
+            try:
+                sample = ds[i]  # type: ignore
+                apps_idx = sample["apps_id"]
+            except IndexError:
+                print(f"Index {i} out of bounds for {args.split} split")
+                continue
 
-        def_spec = def_extractor(sample["spec"])
+        output_folder = output_folder_trunk / f"apps_id_{apps_idx}"
+        metadata = get_or_setup_metadata(output_folder, sample)
 
-        output_path = output_folder / f"Defs_{apps_idx}.Lean"
+        def_output_path = output_folder / f"Defs.lean"
 
-        debug_string = f"sample {apps_idx} (defs)"
-        print(
-            f"Running LEAN proof for APPS sample {debug_string} and outputting to {output_path}..."
-        )
-        final_exit_code, code = lean_main(
-            output_path, sample["apps_question"], def_spec, debug_string, args.model
-        )
-        print(
-            f"Was the final LEAN proof from {args.model} for {debug_string} successful? {final_exit_code}"
-        )
+        # If not all defs have been proven, we need to run the proof for the defs
+        while not metadata["all_defs_proven"]:
+            if def_output_path.exists():
+                with open(def_output_path, "r") as f:
+                    code = f.read()
+            else:
+                code = def_extractor(sample["spec"])
+                with open(def_output_path, "w") as f:
+                    f.write(code)
 
-        code = output_path.read_text()
+            debug_string = f"sample {apps_idx} (all defs)"
+            print(
+                f"Running LEAN proof for APPS {debug_string} and outputting to {def_output_path}..."
+            )
+            result_flag, code, n_attempts = lean_main(
+                def_output_path,
+                sample["apps_question"],
+                code,
+                debug_string,
+                args.model,
+            )
+            print(
+                f"Was the final LEAN proof from {args.model} for {debug_string} successful? {result_flag}"
+            )
 
-        # wipe any theorems added previously
-        code = def_extractor(code)
+            metadata["defs_attempts"] += n_attempts
 
-        total_theorem_count = sample["spec"].count("theorem")
+            if result_flag:
+                metadata["all_defs_proven"] = True
+            
+            with open(output_folder / "metadata.json", "w") as f:
+                json.dump(metadata, f, indent=4)
+
+        try:
+            with open(def_output_path, "r") as f:
+                code = f.read()
+        except FileNotFoundError:
+            print(f"No Defs.lean found for {apps_idx}, even though all defs should be proven by metadata.")
+            continue
+
+        total_theorem_count = metadata["total_theorems"]
 
         for theorem_idx in range(total_theorem_count):
-            theorem_spec = theorem_extractor(sample["spec"], theorem_idx)
-            code = update_code(code, theorem_spec)
+            output_path = output_folder / f"Theorem_{theorem_idx}.Lean"
+            if output_path.exists() and metadata[f"theorem_{theorem_idx}_proven"]:
+                continue
 
-            output_path = output_folder / f"Proof_{apps_idx}_Theorem_{theorem_idx}.Lean"
+            if output_path.exists():
+                with open(output_path, "r") as f:
+                    code = f.read()
+            else:
+                theorem_spec = theorem_extractor(sample["spec"], theorem_idx)
+                code = update_code(code, theorem_spec)
 
             debug_string = f"sample {apps_idx} (theorem {theorem_idx})"
             print(
-                f"Running LEAN proof for APPS sample {debug_string} and outputting to {output_path}..."
+                f"Running LEAN proof for APPS {debug_string} and outputting to {output_path}..."
             )
 
-            final_exit_code, code = lean_main(
+            result_flag, code, n_attempts = lean_main(
                 output_path,
                 sample["apps_question"],
                 code,
@@ -204,5 +237,13 @@ def main():
             )
 
             print(
-                f"Was the final LEAN proof from {args.model} for {debug_string} successful? {final_exit_code}"
+                f"Was the final LEAN proof from {args.model} for {debug_string} successful? {result_flag}"
             )
+
+            metadata[f"theorem_{theorem_idx}_attempts"] += n_attempts
+
+            if result_flag:
+                metadata[f"theorem_{theorem_idx}_proven"] = True
+
+            with open(output_folder / "metadata.json", "w") as f:
+                json.dump(metadata, f, indent=4)
