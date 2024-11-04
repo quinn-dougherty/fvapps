@@ -1,0 +1,50 @@
+***Original Question in English***
+Given a signed 32-bit integer x, return x with its digits reversed. If reversing x causes the value to go outside the signed 32-bit integer range [-231, 231 - 1], then return 0.
+
+Assume the environment does not allow you to store 64-bit integers (signed or unsigned).
+***
+
+***Lean Solution***
+```
+def reverse (i: Int): Int := Id.run <| do
+  let rangeMax : Int := (Int.ofNat 2^31) -1 
+  let rangeMin : Int := (Int.ofNat 2^31)
+  let iAbs := i.natAbs
+  let isNeg := i != iAbs
+  let range := if isNeg then rangeMin else rangeMax
+  let (String.mk cs) := iAbs.repr
+  let zeroCodePoint := '0'.toNat
+  let mut result : Int := 0
+  for c in cs.reverse do
+    let digit := c.toNat - zeroCodePoint
+    if result > (range - digit) / 10 then return 0
+    result := result * 10 + digit
+  if isNeg then -1 * result else result
+```
+***
+
+***Original Question in English***
+Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+
+You may assume that each input would have exactly one solution, and you may not use the same element twice.
+
+You can return the answer in any order.
+***
+
+***Lean Solution***
+```
+import Std
+open Std (HashMap)
+
+def twoSum (values: Array Int) (target: Int): Nat × Nat := Id.run <| do
+  let mut h : HashMap Int Nat := HashMap.empty
+  for i in [0:values.size] do
+    let value := values[i]!
+    let complement := target - value
+    let complementIdx?: Option Nat := h.get? complement
+    match complementIdx? with
+    | some complementIdx => return (complementIdx, i)
+    | none => h := h.insert value i
+  pure (0,0)
+```
+***
