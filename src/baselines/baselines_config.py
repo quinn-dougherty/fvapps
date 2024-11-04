@@ -1,18 +1,18 @@
 import tomllib
 
-with open("src/scripts/baselines_config.toml", "rb") as f:
+with open("src/baselines/baselines_config.toml", "rb") as f:
     cfg = tomllib.load(f)
 
-batteries_imports = open("src/scripts/prompt_imports/Batteries.lean", "r").read()
+batteries_imports = open("src/baselines/prompt_imports/Batteries.lean", "r").read()
 
 lean4_palindromes_example = open(
-    "src/scripts/prompt_imports/palindromes.Lean", "r"
+    "src/baselines/prompt_imports/palindromes.Lean", "r"
 ).read()
 
-lean4_bintree_example = open("src/scripts/prompt_imports/bintree.Lean", "r").read()
+lean4_bintree_example = open("src/baselines/prompt_imports/bintree.Lean", "r").read()
 
 # Copied from https://github.com/paulcadman/lean4-leetcode
-leetcode_examples = open("src/scripts/prompt_imports/leetcode_examples.txt", "r").read()
+leetcode_examples = open("src/baselines/prompt_imports/leetcode_examples.txt", "r").read()
 baselinecfg = {
     **{
         "system_prompt": lambda _: f"""
