@@ -58,41 +58,12 @@ def min_coins_for_votes' (voters : List (Nat × Nat)) : Nat := Id.run do
 theorem Bool.bool_iff_false (b : Bool) : ¬ b = true ↔ b = false := by
   simp
 
-#check List.filter_cons_of_neg
-
-def filter_cascade' (voters : List (Nat × Nat)) (conversions : Nat) : List (Nat × Nat) :=
-  let filtered := voters.filter (λ p => conversions < p.fst)
-  if h : filtered.length = voters.length then
-    filtered
-  else
-    filter_cascade' filtered (conversions + voters.length - filtered.length)
-  termination_by (voters.length - conversions)
-  decreasing_by
-    induction voters generalizing conversions with
-    | nil => simp; contradiction
-    | cons voter voters' ih =>
-      cases g : decide (filtered.length < voters'.length) with
-      | true =>
-        simp [List.filter]
-        cases f : decide (conversions < voter.fst) with
-        | true =>
-          simp
-          specialize (ih conversions)
-          sorry
-        | false =>
-          simp
-          sorry
-      | false =>
-        sorry
-
-#check List.filter_cons_of_neg
-
 def filter_cascade (voters : List (Nat × Nat)) (conversions : Nat) : List (Nat × Nat) :=
-  if h : (voters.filter λ p => conversions < p.fst).length = voters.length then
+  if h : voters.all fun p => conversions < p.fst then
     voters.filter λ p => conversions < p.fst
   else
-    filter_cascade (voters.filter λ p => conversions < p.fst) (conversions + voters.length - (voters.filter λ p => conversions < p.fst).length)
-  termination_by (voters.length - conversions)
+    filter_cascade (voters.filter λ p => conversions < p.fst) (conversions + voters.countP λ p => conversions <= p.fst)
+  termination_by voters.length
   decreasing_by
     induction voters generalizing conversions with
     | nil => simp; contradiction
@@ -102,22 +73,20 @@ def filter_cascade (voters : List (Nat × Nat)) (conversions : Nat) : List (Nat 
       simp [List.filter] at h
       cases g : decide (conversions < voter.fst) with
       | true =>
-        rw [g] at h; simp at h
-        obtain ⟨x1, ⟨h1, h2⟩⟩ := h
-        obtain ⟨x2, h1⟩ := h1
+        simp [List.filter]
+        rw [g]; simp
+        simp at g
+        specialize (h g)
+        obtain ⟨x1, ⟨⟨x2, h1⟩, h2⟩⟩ := h
         specialize (ih conversions x1 x2 h1 h2)
-        rw [List.filter_cons_of_pos]
-        simp
-        omega
-        assumption
+        apply ih
       | false =>
-        rw [List.filter_cons_of_neg]
-        -- rw [g] at h; simp at h
-        have f : (voters'.filter λ p => conversions < p.fst).length ≤ voters'.length := by apply List.length_filter_le
-        have e : conversions ≤ voters'.length := by sorry -- i think this is wrong
+        rw [<- Bool.bool_iff_false] at g
+        rw [List.filter_cons_of_neg] <;> try assumption
+        simp at g
+        have f : (voters'.filter λ p => conversions < p.fst).length <= voters'.length := by
+          apply List.length_filter_le
         omega
-        rw [Bool.bool_iff_false]
-        assumption
 
 def go (voters holdouts : List (Nat × Nat)) (expense conversions : Nat) : Nat :=
   if conversions ≥ voters.length then
