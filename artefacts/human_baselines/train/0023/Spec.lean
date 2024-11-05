@@ -142,17 +142,25 @@ info: 7
 ]
 
 theorem min_coins_for_votes_non_negative (voters : List (Nat × Nat)) :
-  min_coins_for_votes voters ≥ 0 := sorry
+  min_coins_for_votes voters ≥ 0 := by
+    induction voters <;> simp
 
 theorem min_coins_for_votes_upper_bound (voters : List (Nat × Nat)) :
-  min_coins_for_votes voters ≤ List.foldl (· + ·) 0 (List.map (λ p => p.2) voters) := sorry
+  min_coins_for_votes voters ≤ List.foldl (· + ·) 0 (List.map (λ p => p.2) voters) := by
+    induction voters with
+    | nil => simp [min_coins_for_votes, go]
+    | cons voter voters ih =>
+      -- simp [min_coins_for_votes, go]
+      -- simp
+      sorry
 
 theorem min_coins_for_votes_zero_votes (voters : List (Nat × Nat)) :
-  (∀ v ∈ voters, v.1 = 0) → min_coins_for_votes voters = 0 := sorry
+  (∀ v ∈ voters, v.1 = 0) → min_coins_for_votes voters = 0 := by
+    intros h
+    sorry
 
 theorem min_coins_for_votes_single_voter (v : Nat) (c : Nat) :
   min_coins_for_votes [(v, c)] = if v = 0 then 0 else c := by
-    simp [min_coins_for_votes, go]
     sorry
 
 theorem min_coins_for_votes_unit_cost (voters : List (Nat × Nat)) :
