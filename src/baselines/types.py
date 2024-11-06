@@ -60,16 +60,21 @@ class BaselineAgent(ABC):
         self.basic = self.solve_fvapps / "SolveFvapps" / "Basic.lean"
 
         self.check_previous_stage = check_previous_stage
+        self.max_history_length = 2*3
 
     @abstractmethod
     def setup_client(self):
         pass
 
     def append_user_message(self, message: str):
+        if len(self.conversation) >= self.max_history_length:
+            self.conversation = [self.conversation[0]] + self.conversation[-self.max_history_length:]
         entry = {"role": "user", "content": message}
         self.conversation.append(entry)
 
     def append_assistant_message(self, response: str):
+        if len(self.conversation) >= self.max_history_length:
+            self.conversation = [self.conversation[0]] + self.conversation[-self.max_history_length:]
         entry = {"role": "assistant", "content": response}
         self.conversation.append(entry)
 
@@ -147,9 +152,9 @@ class BaselineAgent(ABC):
         """
         log_prefix = f"{self.executable} {self.model_name} {self.debug_string}"
         stdout, stderr, returncode = self.loop_init()
+        self.copy_basic_to_output("loop_0")
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
-            self.copy_basic_to_output(0)
             return True, "", 1
         loops_so_far = i = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
@@ -171,17 +176,20 @@ class BaselineAgent(ABC):
             else:
                 # subprocess call to run it and track outputs and exit codes
                 stdout, stderr, returncode = self.run_code(code)
-                self.copy_basic_to_output(loops_so_far)
-            if self.stopping_condition(stdout, returncode):
-                break
 
+            if self.stopping_condition(stdout, returncode):
+                self.copy_basic_to_output("final")
+                break
+            else:
+                self.copy_basic_to_output(f"loop_{i}")
+
+        self.copy_basic_to_output("last")
         self.save_conversation()
         logging.info(f"{log_prefix} - Final return code: {returncode}")
-        self.copy_basic_to_output(loops_so_far)
         return self.stopping_condition(stdout, returncode), code, i
 
-    def copy_basic_to_output(self, loops_so_far: int):
-        output_path = self.output_path.parent / f"{self.output_path.stem}_loop_{loops_so_far}.lean"
+    def copy_basic_to_output(self, append_string: str):
+        output_path = self.output_path.parent / f"{self.output_path.stem}_{append_string}.lean"
         with open(self.basic, "r") as f:
             code = f.read()
         with open(output_path, "w") as f:

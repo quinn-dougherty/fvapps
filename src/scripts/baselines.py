@@ -39,6 +39,12 @@ def mk_parser() -> ArgumentParser:
         action="store_true",
     )
     parser.add_argument(
+        "--theorem_start_idx",
+        help="index to start proving theorems from",
+        type=int,
+        default=0,
+    )
+    parser.add_argument(
         "--max_theorems",
         help="maximum number of theorems to prove on top of defs",
         type=int,
@@ -177,16 +183,20 @@ def main():
         metadata = get_or_setup_metadata(output_folder, sample)
 
         def_output_path = output_folder / f"Defs.lean"
+        def_output_path_final = output_folder / f"Defs_final.lean"
+        def_output_path_last = output_folder / f"{def_output_path.stem}_last.lean"
 
         # If not all defs have been proven, we need to run the proof for the defs
-        while not metadata["all_defs_proven"]:
-            if def_output_path.exists():
-                with open(def_output_path, "r") as f:
+        if not metadata["all_defs_proven"]:
+            if def_output_path_final.exists():
+                with open(def_output_path_final, "r") as f:
+                    code = f.read()
+            elif def_output_path_last.exists():
+                with open(def_output_path_last, "r") as f:
                     code = f.read()
             else:
+                # we have never done anything with this app idx before
                 code = def_extractor(sample["spec"])
-                with open(def_output_path, "w") as f:
-                    f.write(code)
 
             debug_string = f"sample {apps_idx} (all defs)"
             print(
@@ -211,28 +221,31 @@ def main():
             with open(output_folder / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=4)
 
+        defs_final_output_path = output_folder / f"{def_output_path.stem}_final.lean"
         try:
-            with open(def_output_path, "r") as f:
-                code = f.read()
+            with open(defs_final_output_path, "r") as f:
+                def_code = f.read()
         except FileNotFoundError:
-            print(
-                f"No Defs.lean found for {apps_idx}, even though all defs should be proven by metadata."
-            )
-            continue
+            print(f"No Defs_final.lean found for {apps_idx}.")
+            continue # move on to next apps id if range was specified in CLI args
 
         total_theorem_count = metadata["total_theorems"]
 
-        for theorem_idx in range(min(total_theorem_count, args.max_theorems)):
-            output_path = output_folder / f"Theorem_{theorem_idx}.Lean"
-            if output_path.exists() and metadata[f"theorem_{theorem_idx}_proven"]:
+        for theorem_idx in range(
+            args.theorem_start_idx, min(total_theorem_count, args.max_theorems)
+        ):
+            output_path = output_folder / f"Theorem_{theorem_idx}.lean"
+            output_path_final = output_folder / f"Theorem_{theorem_idx}_final.lean"
+            if output_path_final.exists() and metadata[f"theorem_{theorem_idx}_proven"]:
                 continue
 
-            if output_path.exists():
-                with open(output_path, "r") as f:
+            output_last_path = output_folder / f"Theorem_{theorem_idx}_last.lean"
+            if output_last_path.exists():
+                with open(output_last_path, "r") as f:
                     code = f.read()
             else:
                 theorem_spec = theorem_extractor(sample["spec"], theorem_idx)
-                code = update_code(code, theorem_spec)
+                code = update_code(def_code, theorem_spec)
 
             debug_string = f"sample {apps_idx} (theorem {theorem_idx})"
             print(
