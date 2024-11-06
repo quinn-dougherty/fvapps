@@ -149,7 +149,7 @@ class BaselineAgent(ABC):
         stdout, stderr, returncode = self.loop_init()
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
-            self.copy_basic_to_output()
+            self.copy_basic_to_output(0)
             return True, "", 1
         loops_so_far = i = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
@@ -171,19 +171,20 @@ class BaselineAgent(ABC):
             else:
                 # subprocess call to run it and track outputs and exit codes
                 stdout, stderr, returncode = self.run_code(code)
-                self.copy_basic_to_output()
+                self.copy_basic_to_output(loops_so_far)
             if self.stopping_condition(stdout, returncode):
                 break
 
         self.save_conversation()
         logging.info(f"{log_prefix} - Final return code: {returncode}")
-        self.copy_basic_to_output()
+        self.copy_basic_to_output(loops_so_far)
         return self.stopping_condition(stdout, returncode), code, i
 
-    def copy_basic_to_output(self):
+    def copy_basic_to_output(self, loops_so_far: int):
+        output_path = self.output_path.parent / f"{self.output_path.stem}_loop_{loops_so_far}.lean"
         with open(self.basic, "r") as f:
             code = f.read()
-        with open(self.output_path, "w") as f:
+        with open(output_path, "w") as f:
             f.write(code)
 
     def dump_full_chat_history(self):

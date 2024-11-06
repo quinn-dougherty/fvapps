@@ -38,6 +38,12 @@ def mk_parser() -> ArgumentParser:
         help="use apps ids instead of indices",
         action="store_true",
     )
+    parser.add_argument(
+        "--max_theorems",
+        help="maximum number of theorems to prove on top of defs",
+        type=int,
+        default=100,
+    )
     return parser
 
 
@@ -216,7 +222,7 @@ def main():
 
         total_theorem_count = metadata["total_theorems"]
 
-        for theorem_idx in range(total_theorem_count):
+        for theorem_idx in range(min(total_theorem_count, args.max_theorems)):
             output_path = output_folder / f"Theorem_{theorem_idx}.Lean"
             if output_path.exists() and metadata[f"theorem_{theorem_idx}_proven"]:
                 continue
