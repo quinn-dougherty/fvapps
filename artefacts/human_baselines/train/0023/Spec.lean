@@ -1,20 +1,3 @@
-def List.minHier1 (l : List (Nat × Nat)) : Option (Nat × Nat) := l.foldl (λ o a =>
-    match o with
-    | none => some a
-    | some b => if a.snd < b.snd then some (if a.fst < b.fst then a else b) else some b) none
-
-def List.minHier2 (l : List (Nat × Nat)) : Option (Nat × Nat) :=
-  l.foldl (λ o a =>
-    match o with
-    | none => some a
-    | some b => if a.fst < b.fst then some (if a.snd < b.snd then a else b) else some b) none
-
-def List.argmin? {α β : Type} [LT β] [DecidableRel fun (x1 x2 : β) => x1 < x2] (l : List α) (f : α → β) : Option α :=
-  l.foldl (λ o a =>
-    match o with
-    | none => some a
-    | some b => if f a < f b then some a else some b) none
-
 def List.argmax? {α β : Type} [LT β] [DecidableRel fun (x1 x2 : β) => x1 < x2] (l : List α) (f : α → β) : Option α :=
   l.foldl (λ o a =>
     match o with
@@ -102,23 +85,23 @@ def go (voters holdouts : List (Nat × Nat)) (expense conversions : Nat) : Nat :
          holdouts'
          (expense + bestValue.snd)
          (conversions + 1)
-  termination_by sizeOf (voters.length - conversions)
+  termination_by (voters.length - conversions)
   decreasing_by omega
 
-def min_coins_for_votes (voters : List (Nat × Nat)) : Nat :=
+def solve_elections (n : Nat) (voters : List (Nat × Nat)) : Nat :=
   go voters voters 0 0
 
 /--
 info: 8
 -/
 #guard_msgs in
-#eval min_coins_for_votes [(1, 5), (2, 10), (2, 8)]
+#eval solve_elections 3 [(1, 5), (2, 10), (2, 8)]
 
 /--
 info: 0
 -/
 #guard_msgs in
-#eval min_coins_for_votes [
+#eval solve_elections 7 [
   (0, 1),
   (3, 1),
   (1, 1),
@@ -132,7 +115,7 @@ info: 0
 info: 7
 -/
 #guard_msgs in
-#eval min_coins_for_votes [
+#eval solve_elections 6 [
   (2, 6),
   (2, 3),
   (2, 8),
@@ -141,38 +124,18 @@ info: 7
   (5, 5)
 ]
 
-theorem min_coins_for_votes_non_negative (voters : List (Nat × Nat)) :
-  min_coins_for_votes voters ≥ 0 := by
-    induction voters <;> simp
+theorem solve_elections_nonnegative (n : Nat) (voters : List (Nat × Nat)) : solve_elections n voters >= 0 := by exact Nat.zero_le _
 
-theorem min_coins_for_votes_upper_bound (voters : List (Nat × Nat)) :
-  min_coins_for_votes voters ≤ List.foldl (· + ·) 0 (List.map (λ p => p.2) voters) := by
-    induction voters with
-    | nil => simp [min_coins_for_votes, go]
-    | cons voter voters ih =>
-      -- simp [min_coins_for_votes, go]
-      -- simp
-      sorry
+set_option maxRecDepth 1999
+theorem solve_elections_upper_bound (n : Nat) (voters : List (Nat × Nat)) : solve_elections n voters <= List.foldl (λ acc (pair : Nat × Nat) => acc + pair.2) 0 voters := by
+  simp [solve_elections]
+  induction voters generalizing n with
+  | nil => simp [go]
+  | cons voter voters ih =>
+    simp
 
-theorem min_coins_for_votes_zero_votes (voters : List (Nat × Nat)) :
-  (∀ v ∈ voters, v.1 = 0) → min_coins_for_votes voters = 0 := by
-    intros h
-    sorry
 
-theorem min_coins_for_votes_single_voter (v : Nat) (c : Nat) :
-  min_coins_for_votes [(v, c)] = if v = 0 then 0 else c := by
-    sorry
 
-theorem min_coins_for_votes_unit_cost (voters : List (Nat × Nat)) :
-  (∀ v ∈ voters, v.2 = 1) →
-  min_coins_for_votes voters ≤ List.length voters ∧
-  min_coins_for_votes voters ≤ List.foldl Nat.max 0 (List.map (λ p => p.1) voters) := sorry
+theorem solve_elections_zero_votes (n : Nat) (voters : List (Nat × Nat)) : (List.all voters (fun pair => pair.1 = 0)) -> solve_elections n voters = 0 := sorry
 
-theorem min_coins_for_votes_sorted_input (voters : List (Nat × Nat)) :
-  min_coins_for_votes voters = min_coins_for_votes (List.map id voters) := sorry
-
-theorem min_coins_for_votes_no_votes_needed (voters : List (Nat × Nat)) :
-  (∀ v ∈ voters, v.1 = 0) → min_coins_for_votes voters = 0 := sorry
-
-theorem min_coins_for_votes_zero_cost (voters : List (Nat × Nat)) :
-  (∀ v ∈ voters, v.2 = 0) → min_coins_for_votes voters = 0 := sorry
+theorem solve_elections_single_zero_vote : solve_elections 1 [(0, 5)] = 0 := sorry
