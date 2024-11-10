@@ -155,6 +155,7 @@ class BaselineAgent(ABC):
         self.copy_basic_to_output("loop_0")
         if self.stopping_condition(stdout, returncode):
             self.save_conversation()
+            self.copy_basic_to_output("final")
             return True, "", 1
         loops_so_far = i = 1
         for i in range(loops_so_far, self.max_iterations + loops_so_far):
