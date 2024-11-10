@@ -268,6 +268,7 @@ def main():
 
             if result_flag:
                 metadata[f"theorem_{theorem_idx}_proven"] = True
+                metadata["theorems_proven"] += 1
 
             with open(output_folder / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=4)
