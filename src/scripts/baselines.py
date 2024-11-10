@@ -50,6 +50,11 @@ def mk_parser() -> ArgumentParser:
         type=int,
         default=100,
     )
+    parser.add_argument(
+        "--dry_run",
+        help="dry run",
+        action="store_true",
+    )
     return parser
 
 
@@ -178,6 +183,10 @@ def main():
             except IndexError:
                 print(f"Index {i} out of bounds for {args.split} split")
                 continue
+
+        if args.dry_run:
+            print(f"Dry run for {apps_idx}")
+            continue
 
         output_folder = output_folder_trunk / f"apps_id_{apps_idx}"
         metadata = get_or_setup_metadata(output_folder, sample)
