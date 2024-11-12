@@ -19,12 +19,14 @@ class GoogleAgent(BaselineAgent):
 
     def send_appended_user_message(self, message: str) -> str:
         self.append_user_message(message)
-        chat = self.client.start_chat(history=self.conversation)
+
+        gemini_msgs = []
+        for msg in self.conversation:
+            if msg["role"] == "user":
+                gemini_msgs.append({"role": "user", "parts": msg["content"]})
+            else:
+                gemini_msgs.append({"role": "model", "parts": msg["content"]})
+
+        chat = self.client.start_chat(history=gemini_msgs)
         response = chat.send_message(message)
         return response.text  # type: ignore
-
-    def append_assistant_message(self, response: str):
-        self.conversation.append({"role": "model", "parts": response})
-
-    def append_user_message(self, message: str):
-        self.conversation.append({"role": "user", "parts": message})
