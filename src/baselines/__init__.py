@@ -8,7 +8,7 @@ from .huggingface_agent import HuggingFaceAgent
 from .baselines_config import (
     gemini_cfg,
     llama_cfg,
-    o1_cfg,
+    gpt4o_cfg,
     prover_rl_cfg,
     sonnet_cfg,
     testhf_cfg,
@@ -18,7 +18,7 @@ def get_agent_by_name(name: str) -> Type[BaselineAgent]:
     match name:
         case "sonnet":
             return ClaudeAgent
-        case "o1-mini":
+        case "gpt-4o":
             return OpenAIAgent
         case "gemini":
             return GoogleAgent
@@ -35,8 +35,8 @@ def get_config_by_name(name: str) -> AgentConfig:
     match name:
         case "sonnet":
             return sonnet_cfg
-        case "o1-mini":
-            return o1_cfg
+        case "gpt-4o":
+            return gpt4o_cfg
         case "gemini":
             return gemini_cfg
         case "prover-rl":

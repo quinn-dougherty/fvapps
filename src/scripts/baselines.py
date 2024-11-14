@@ -15,7 +15,7 @@ def mk_parser() -> ArgumentParser:
         help="model name (default: sonnet)",
         type=str,
         default="sonnet",
-        choices=["sonnet", "o1-mini", "gemini", "prover-rl", "llama", "testhf"],
+        choices=["sonnet", "gpt-4o", "gemini", "prover-rl", "llama", "testhf"],
     )
     parser.add_argument(
         "--split",

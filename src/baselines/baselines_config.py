@@ -89,7 +89,7 @@ Please fix your original output, keeping in mind the strong guidelines above. If
 }
 
 sonnet_cfg = {**cfg["sonnet"], **baselinecfg}
-o1_cfg = {**cfg["o1"], **baselinecfg}
+gpt4o_cfg = {**cfg["gpt-4o"], **baselinecfg}
 gemini_cfg = {**cfg["gemini"], **baselinecfg}
 prover_rl_cfg = {**cfg["prover_rl"], **baselinecfg}
 llama_cfg = {**cfg["llama"], **baselinecfg}

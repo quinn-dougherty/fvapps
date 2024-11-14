@@ -7,9 +7,9 @@ max_iterations = 25
 model_name = "claude-3-5-sonnet-20241022"
 max_tokens_per_completion = 8000 # api limit is here
 
-[o1]
-max_iterations = 10
-model_name = "claude-3-5-sonnet-20240620"
+[gpt-4o]
+max_iterations = 25
+model_name = "gpt-4o-2024-08-06"
 max_tokens_per_completion = 8000
 
 [gemini]
