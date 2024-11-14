@@ -236,6 +236,7 @@ markupsafe==2.1.5
     # via jinja2
     # via nbconvert
 matplotlib==3.9.2
+    # via seaborn
 matplotlib-inline==0.1.7
     # via ipykernel
     # via ipython
@@ -275,6 +276,7 @@ numpy==2.1.1
     # via matplotlib
     # via pandas
     # via pyarrow
+    # via seaborn
     # via transformers
 nvidia-cublas-cu12==12.4.5.8
     # via nvidia-cudnn-cu12
@@ -324,6 +326,7 @@ packaging==24.1
     # via transformers
 pandas==2.2.2
     # via datasets
+    # via seaborn
 pandocfilters==1.5.1
     # via nbconvert
 parso==0.8.4
@@ -433,6 +436,7 @@ rsa==4.9
 safetensors==0.4.5
     # via accelerate
     # via transformers
+seaborn==0.13.2
 send2trash==1.8.3
     # via jupyter-server
 setuptools==74.1.2

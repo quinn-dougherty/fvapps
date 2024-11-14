@@ -41,6 +41,7 @@ dev-dependencies = [
     "pytest>=8.3.2",
     "hypothesis>=6.112.0",
     "matplotlib>=3.9.2",
+    "seaborn>=0.13.2",
 ]
 [tool.rye.scripts]
 upload = { cmd = "./src/scripts/hf.sh"  }
