@@ -6,6 +6,8 @@ tags:
 - lean
 - lean4
 - software_engineering
+- proof
+- verification
 ---
 # Formally Verified APPS
 
@@ -39,4 +41,6 @@ theorem solve_elections_zero_votes (n : Nat) (voters : List (Nat × Nat)) : (Lis
 theorem solve_elections_single_zero_vote : solve_elections 1 [(0, 5)] = 0 := sorry
 ```
 
-## [Code to generate benchmark and baselines](https://github.com/quinn-dougherty/fvapps)
+## Code to generate benchmark and baselines
+
+[GitHub](https://github.com/quinn-dougherty/fvapps)

@@ -14,6 +14,7 @@ from .baselines_config import (
     testhf_cfg,
 )
 
+
 def get_agent_by_name(name: str) -> Type[BaselineAgent]:
     match name:
         case "sonnet":
@@ -31,7 +32,8 @@ def get_agent_by_name(name: str) -> Type[BaselineAgent]:
         case _:
             raise ValueError(f"Model argument {name} unknown")
 
-def get_config_by_name(name: str) -> AgentConfig:
+
+def get_config_by_name(name: str) -> dict:
     match name:
         case "sonnet":
             return sonnet_cfg
@@ -48,7 +50,10 @@ def get_config_by_name(name: str) -> AgentConfig:
         case _:
             raise ValueError(f"Model argument {name} unknown")
 
-def build_agent(name: str, input_context: tuple[str, str], output_path: Path, config: dict) -> BaselineAgent:
+
+def build_agent(
+    name: str, input_context: tuple[str, str], output_path: Path, config: dict
+) -> BaselineAgent:
     return get_agent_by_name(name)(
         input_context=input_context,
         output_path=output_path,
