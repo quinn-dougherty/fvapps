@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Main vertical line -->
+  <path 
+    d="M70 80 C70 80, 30 80, 30 80
+       M70 50 C70 50, 40 50, 40 50
+       M70 20 C70 20, 30 20, 30 20
+       M70 80 C70 80, 70 20, 70 20"
+    stroke="black" 
+    stroke-width="8" 
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>
