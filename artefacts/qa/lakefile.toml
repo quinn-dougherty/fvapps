@@ -1,0 +1,11 @@
+name = "Qa"
+version = "0.1.0"
+defaultTargets = ["Qa"]
+
+[[require]]
+name = "plausible"
+scope = "leanprover-community"
+rev = "3b0b954f62792681076389108fa9305b9892d394"
+
+[[lean_lib]]
+name = "Qa"

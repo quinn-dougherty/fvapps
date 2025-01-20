@@ -101,6 +101,9 @@ class DebuggingAgent:
             case _:
                 return False
 
+    def speclean_exited_zero(self, path: Path) -> bool:
+        return read_lean(path)["latest_run_success"]
+
     @property
     def successfuler(self) -> Callable[[Path], None]:
         match self.executable:

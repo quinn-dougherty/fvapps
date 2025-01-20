@@ -1,10 +1,6 @@
 # old*
 old*
 
-# test outputs
-artefacts/
-!artefacts/baselines/solve-fvapps
-
 # zipped artifacts
 *.tar.gz
 
@@ -26,7 +22,16 @@ wheels/
 # venv
 .venv
 
+# lake
+.lake/
+
+*.log
 .ipynb_checkpoints/
-artefacts/*.log
 artefacts/fvapps/
 artefacts/misc/
+artefacts/baselines/
+artefacts/apps/
+artefacts/QA_JOURNAL.txt
+!artefacts/baselines/solve-fvapps
+!artefacts/human_baselines/
+!artefacts/qa/

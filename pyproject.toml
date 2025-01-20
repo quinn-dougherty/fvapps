@@ -32,7 +32,8 @@ preprocess = "scripts.preprocess:main"
 fvapps = "scripts.fvapps:main"
 postprocess = "scripts.postprocess:main"
 baselines = "scripts.baselines:main"
-qa1 = "scripts.qa:one"
+qa_autoformalize = "scripts.qa:one"
+qa_plausible = "scripts.qa:two"
 
 [tool.rye]
 managed = true
