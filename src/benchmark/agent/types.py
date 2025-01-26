@@ -129,7 +129,7 @@ class DebuggingAgent:
         sysprompt = {"type": "text", "text": self.system_prompt("")}
         if cache:
             sysprompt["cache-control"] = "ephemeral"
-        response = self.client.beta.prompt_caching.messages.create(
+        response = self.client.messages.create(
             model=self.model_name,
             max_tokens=self.max_tokens_per_completion,
             system=[sysprompt],  # type: ignore

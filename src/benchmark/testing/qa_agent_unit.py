@@ -5,6 +5,7 @@ from pathlib import Path
 from benchmark.utils.logger_setup import logging
 from benchmark.agent.types import AgentConfig
 from benchmark.agent.agents import LeanAgent
+from src.benchmark.utils.metadata import write_metadata
 
 
 class QaAgentUnit(LeanAgent):
@@ -19,6 +20,10 @@ class QaAgentUnit(LeanAgent):
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
         self.metadata_path = self.output_path.parent / "metadata.json"
+
+    def writer(self, metadata: dict):
+        # metadata here will be loaded from disk by reader, it should never be just this QA data.
+        write_metadata(self.metadata_path, metadata)
 
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
@@ -80,7 +85,7 @@ class QaAgentUnit(LeanAgent):
 
         if self.stopping_condition(returncode):
             metadata["qa_unit_success"] = True
-            self.writer(metadata, self.output_path.parent)
+            self.writer(metadata)
             return True
 
         for i in range(self.max_iterations):
@@ -95,12 +100,12 @@ class QaAgentUnit(LeanAgent):
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
                 metadata["qa_unit_success"] = True
-                self.writer(metadata, self.output_path.parent)
+                self.writer(metadata)
                 break
 
         if not self.stopping_condition(returncode):
             metadata["qa_unit_success"] = False
-            self.writer(metadata, self.output_path.parent)
+            self.writer(metadata)
 
         logging.info(f"Final QA Unit return code: {returncode}")
         return self.stopping_condition(returncode)

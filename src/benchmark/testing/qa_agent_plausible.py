@@ -6,7 +6,7 @@ from pathlib import Path
 from benchmark.utils.logger_setup import logging
 from benchmark.agent.types import AgentConfig
 from benchmark.agent.agents import LeanAgent
-
+from benchmark.utils.metadata import write_metadata
 
 class QaAgentPlausible(LeanAgent):
     def __init__(
@@ -20,6 +20,10 @@ class QaAgentPlausible(LeanAgent):
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
         self.metadata_path = self.output_path.parent / "metadata.json"
+
+    def writer(self, metadata: dict):
+        # metadata here will be loaded from disk by reader, it should never be just this QA data.
+        write_metadata(self.metadata_path, metadata)
 
     def extract_theorems(self, code: str) -> list[tuple[str, str]]:
         """Extract theorem names and bodies from the code."""
@@ -74,7 +78,7 @@ class QaAgentPlausible(LeanAgent):
         if not metadata.get("qa_unit_success", False):
             logging.warning("Unit tests did not pass, skipping plausibility check")
             metadata["qa_plausible_success"] = False
-            self.writer(metadata, self.output_path.parent)
+            self.writer(metadata)
             return False
 
         # Read the original code
@@ -86,7 +90,7 @@ class QaAgentPlausible(LeanAgent):
         if not theorems:
             logging.warning("No theorems found in the code")
             metadata["qa_plausible_success"] = False
-            self.writer(metadata, self.output_path.parent)
+            self.writer(metadata)
             return False
 
         # Test each theorem for plausibility
@@ -107,7 +111,7 @@ class QaAgentPlausible(LeanAgent):
         # Update metadata with results
         metadata["qa_plausible_success"] = len(plausible_theorems) > 0
         metadata["plausible_theorems"] = plausible_theorems
-        self.writer(metadata, self.output_path.parent)
+        self.writer(metadata)
 
         # Write the final version with all plausible theorems
         if plausible_theorems:
