@@ -2,7 +2,8 @@ from pathlib import Path
 from argparse import ArgumentParser
 from benchmark.agent.types import AgentConfig
 from benchmark.testing.qa_config import sonnet_cfg as sonnet_qa_cfg
-from benchmark.testing.agent import QaAgent
+from benchmark.testing.qa_agent_unit import QaAgentUnit
+from benchmark.testing.qa_agent_plausible import QaAgentPlausible
 
 
 def mk_parser() -> ArgumentParser:
@@ -27,22 +28,35 @@ def mk_parser() -> ArgumentParser:
 
 
 # TODO: handle resets
-def autoformalize(py_soln_clean: str, out_path: Path, sample_idx: int):
-
+def autoformalize(py_soln_clean: str, out_path: Path, sample_idx: int) -> bool:
     with open(py_soln_clean, "r") as f:
         content = f.read()
 
-    agent = QaAgent(
+    # First stage: Unit testing QA
+    unit_agent = QaAgentUnit(
         input_context=content,
         output_path=out_path,
         config=AgentConfig(**sonnet_qa_cfg, sample_idx=sample_idx),
         check_previous_stage=False,
     )
-    final_exit_code = agent.loop()
+    unit_success = unit_agent.loop()
     print(
-        f"Was the final QA generation for sample {sample_idx} successful? {final_exit_code}"
+        f"Was the unit QA generation for sample {sample_idx} successful? {unit_success}"
     )
-    return
+
+    # Second stage: Plausibility testing QA
+    plausible_agent = QaAgentPlausible(
+        input_context=content,
+        output_path=out_path,
+        config=AgentConfig(**sonnet_qa_cfg, sample_idx=sample_idx),
+        check_previous_stage=True,
+    )
+    plausible_success = plausible_agent.loop()
+    print(
+        f"Was the plausibility QA for sample {sample_idx} successful? {plausible_success}"
+    )
+
+    return unit_success and plausible_success
 
 
 def one():

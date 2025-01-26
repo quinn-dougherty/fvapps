@@ -7,7 +7,7 @@ from benchmark.agent.types import AgentConfig
 from benchmark.agent.agents import LeanAgent
 
 
-class QaAgent(LeanAgent):
+class QaAgentUnit(LeanAgent):
     def __init__(
         self,
         input_context: str,
@@ -79,7 +79,7 @@ class QaAgent(LeanAgent):
         metadata = self.reader(self.output_path.parent) if self.metadata_path.exists() else {}
 
         if self.stopping_condition(returncode):
-            metadata["qa_success"] = True
+            metadata["qa_unit_success"] = True
             self.writer(metadata, self.output_path.parent)
             return True
 
@@ -94,13 +94,13 @@ class QaAgent(LeanAgent):
 
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
-                metadata["qa_success"] = True
+                metadata["qa_unit_success"] = True
                 self.writer(metadata, self.output_path.parent)
                 break
 
         if not self.stopping_condition(returncode):
-            metadata["qa_success"] = False
+            metadata["qa_unit_success"] = False
             self.writer(metadata, self.output_path.parent)
 
-        logging.info(f"Final QA return code: {returncode}")
+        logging.info(f"Final QA Unit return code: {returncode}")
         return self.stopping_condition(returncode)
