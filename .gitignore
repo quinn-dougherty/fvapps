@@ -27,11 +27,7 @@ wheels/
 
 *.log
 .ipynb_checkpoints/
-artefacts/fvapps/
-artefacts/misc/
-artefacts/baselines/
-artefacts/apps/
-artefacts/QA_JOURNAL.txt
+artefacts/
 !artefacts/baselines/solve-fvapps
 !artefacts/human_baselines/
 !artefacts/qa/
