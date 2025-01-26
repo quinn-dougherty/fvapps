@@ -18,6 +18,7 @@ class QaAgent(LeanAgent):
         super().__init__(input_context, output_path, config, check_previous_stage)
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
+        self.metadata_path = self.output_path.parent / "metadata.json"
 
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
@@ -74,24 +75,32 @@ class QaAgent(LeanAgent):
             logging.warning("Preceding stage did not exit with 0")
             return False
         stdout, stderr, returncode = self.loop_init()
-        # NO METADATA FOR QA # loops_so_far = self.reader(self.output_path.parent)["loops"]
+
+        metadata = self.reader(self.output_path.parent) if self.metadata_path.exists() else {}
+
         if self.stopping_condition(returncode):
+            metadata["qa_success"] = True
+            self.writer(metadata, self.output_path.parent)
             return True
+
         for i in range(self.max_iterations):
             msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
-            # NO METADATA FOR QA
-            # if not done, append the response to the conversation and get a new response
-            # with secondary prompt scaffold
-            response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))  # type: ignore
+
+            response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))
             self.append_assistant_message(response)
             code = self.extract_code(response)
 
-            # subprocess call to run it and track outputs and exit codes
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
+                metadata["qa_success"] = True
+                self.writer(metadata, self.output_path.parent)
                 break
+
+        if not self.stopping_condition(returncode):
+            metadata["qa_success"] = False
+            self.writer(metadata, self.output_path.parent)
 
         logging.info(f"Final QA return code: {returncode}")
         return self.stopping_condition(returncode)
