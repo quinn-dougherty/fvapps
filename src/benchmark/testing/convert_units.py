@@ -1,5 +1,6 @@
 import ast
-
+from pathlib import Path
+from typing import Literal
 
 LEAN_TEST_TEMPLATE = (
     lambda expected, func_name, args: f"""/--
@@ -11,10 +12,22 @@ info: {expected}
 )
 
 
+def array_or_list(outpath: Path) -> Literal["array", "list"] | None:
+    with open(outpath / "Spec.lean", "r") as f:
+        content = f.read()
+    if "Array" in content:
+        return "array"
+    if "List" in content:
+        return "list"
+    return None
+
+
 class AssertVisitor(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self, outpath: Path):
+        self.outpath = outpath
         self.test_cases = []
         self.current_test_vars = {}
+        self.collection = array_or_list(outpath)
 
     def visit_Assign(self, node):
         # Capture variable assignments before assert statements
@@ -44,6 +57,8 @@ class AssertVisitor(ast.NodeVisitor):
                         if arg_str.startswith("'") and arg_str.endswith("'"):
                             arg_str = f'"{arg_str[1:-1]}"'
 
+                        if arg_str.startswith("[") and self.collection == "array":
+                            arg_str = f"#{arg_str}"
                         args.append(arg_str)
 
                     expected = ast.unparse(node.test.comparators[0])
@@ -56,8 +71,9 @@ class AssertVisitor(ast.NodeVisitor):
         self.current_test_vars = {}
 
 
-def convert_tests(python_code: str) -> str:
+def convert_tests(python_code: str, outpath: Path) -> str:
+    """Convert Python assert statements to Lean test cases. Takes an outpath to read Spec.lean and determine if the collection type is array or list"""
     tree = ast.parse(python_code)
-    visitor = AssertVisitor()
+    visitor = AssertVisitor(outpath=outpath)
     visitor.visit(tree)
     return "\n".join(visitor.test_cases)

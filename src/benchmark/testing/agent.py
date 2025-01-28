@@ -6,6 +6,8 @@ from typing import Callable
 from benchmark.utils.logger_setup import logging
 from benchmark.utils.metadata import (
     METADATA_FILENAME,
+    increment_unit_loops,
+    read_unit,
     successfuler_unit,
     unit_reinitialize_metadata,
 )
@@ -15,8 +17,6 @@ from benchmark.testing.convert_units import convert_tests
 
 
 class QaAgentUnit(LeanAgent):
-    """No restarts"""
-
     def __init__(
         self,
         input_context: str,
@@ -36,12 +36,20 @@ class QaAgentUnit(LeanAgent):
     def successfuler(self) -> Callable[[Path], None]:
         return successfuler_unit
 
+    @property
+    def incrementor(self) -> Callable[[Path], None]:
+        return increment_unit_loops
+
+    @property
+    def reader(self) -> Callable[[Path], dict]:
+        return read_unit
+
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
             warning = "Code is the empty string"
             logging.warning(warning)
             return "", warning, 1
-        code = f"{code}\n\n{convert_tests(self.soln_clean)}"
+        code = f"{code}\n\n{convert_tests(self.soln_clean, self.output_path.parent)}"
         logging.info(f"Writing code to {self.qa_lake}")
         logging.debug(f"Code:\n{code}")
         with open(self.basic, "w") as f:
@@ -92,13 +100,15 @@ class QaAgentUnit(LeanAgent):
             logging.warning("Preceding stage did not exit with 0")
             return False
         stdout, stderr, returncode = self.loop_init()
+        loops_so_far = self.reader(self.output_path.parent)["loops"]
 
         if self.stopping_condition(returncode):
             self.successfuler(self.output_path.parent)
             return True
 
-        for i in range(self.max_iterations):
-            msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations}"
+        # Note: we're not actually keeping track of number of loops
+        for i in range(loops_so_far, self.max_iterations + loops_so_far):
+            msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations + loops_so_far}"
             print(msg)
             logging.info(msg)
             self.incrementor(self.output_path.parent)

@@ -24,7 +24,7 @@ def initialize_metadata(path: Path):
         "preproc": {"loops": 0, "latest_run_success": False},
         "python": {"loops": 0, "latest_run_success": False},
         "lean": {"loops": 0, "latest_run_success": False},
-        "unit": {"loops": 0, "latest_run_success": False},
+        "unit": {"loops": -1, "latest_run_success": False},
         "plausible_theorems": [],
     }
     if not (path / METADATA_FILENAME).exists():

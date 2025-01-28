@@ -23,6 +23,17 @@ Please translate the following solution into lean 4, skipping the "main" runner 
 ```
 {soln}
 ```
+
+We'll convert the test cases to lean unit tests with the following format:
+```lean
+/--
+ info: <expected>
+-/
+#guard_msgs in
+#eval <function_name> <args>
+
+Make sure the function name in your autoformalization matches the function name in the original code.
+```
 """,
         "continuous_prompt": lambda stdout, stderr: f"""
 Running the code produced the following output:
@@ -37,7 +48,9 @@ Standard error:
 {stderr}
 ```
 
-Please fix your original output, keeping in mind the strong guidelines above. If the current code is correct and you have another shot, try to address the sorrys that were added as intermediate steps.
+Please fix your original output, keeping in mind the strong guidelines above.
+
+Do not copy the `#guard_msgs in #eval` block from the lean output. We will add that for you.
 """,
     },
     **cfg["common"],
