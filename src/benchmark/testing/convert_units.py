@@ -30,21 +30,26 @@ class AssertVisitor(ast.NodeVisitor):
                     func_name = call.func.id
                     args = []
                     for arg in call.args:
-                        # If argument is a Name and exists in current_test_vars, use that
+                        # Always inline the value, whether it's a name or direct value
                         if (
                             isinstance(arg, ast.Name)
                             and arg.id in self.current_test_vars
                         ):
-                            args.append(self.current_test_vars[arg.id])
+                            arg_str = self.current_test_vars[arg.id]
                         else:
-                            args.append(ast.unparse(arg))
+                            arg_str = ast.unparse(arg)
+
+                        arg_str = arg_str.replace("'", '"')
+                        # Convert single quotes to double quotes for string literals
+                        if arg_str.startswith("'") and arg_str.endswith("'"):
+                            arg_str = f'"{arg_str[1:-1]}"'
+
+                        args.append(arg_str)
 
                     expected = ast.unparse(node.test.comparators[0])
-
                     lean_test = LEAN_TEST_TEMPLATE(
                         expected=expected, func_name=func_name, args=" ".join(args)
                     )
-
                     self.test_cases.append(lean_test)
 
         # Clear variables after each assert
@@ -55,4 +60,4 @@ def convert_tests(python_code: str) -> str:
     tree = ast.parse(python_code)
     visitor = AssertVisitor()
     visitor.visit(tree)
-    return "\n\n".join(visitor.test_cases)
+    return "\n".join(visitor.test_cases)

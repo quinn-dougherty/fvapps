@@ -2,38 +2,50 @@ import os
 import re
 import subprocess
 from pathlib import Path
+from functools import partial
+from typing import Callable
 
 from benchmark.utils.logger_setup import logging
-from benchmark.agent.types import AgentConfig
-from benchmark.agent.agents import LeanAgent
-from benchmark.utils.metadata import write_metadata
+from benchmark.utils.metadata import (
+    METADATA_FILENAME,
+    set_qa_plausible_theorems,
+    read_metadata,
+    set_qa_plausible_theorems,
+)
 
-class QaAgentPlausible(LeanAgent):
-    def __init__(
-        self,
-        input_context: str,
-        output_path: Path,
-        config: AgentConfig,
-        check_previous_stage: bool = True,
-    ):
-        super().__init__(input_context, output_path, config, check_previous_stage)
+
+def extract_theorems(code: str) -> list[tuple[str, str]]:
+    """Extract theorem names and bodies from the code."""
+    theorem_pattern = (
+        r"theorem\s+([a-zA-Z0-9_]+)\s*[^:]*:\s*([^:]+?)\s*:=\s*(?:by\s+)?sorry"
+    )
+    return re.findall(theorem_pattern, code)
+
+
+def replace_sorry_with_plausible(code: str, theorem_name: str) -> str:
+    """Replace sorry with plausible for a specific theorem."""
+    pattern = f"(theorem\\s+{theorem_name}[^:]*:[^:]+?:=\\s*(?:by\\s+)?)(sorry)"
+    return re.sub(pattern, r"\1plausible", code)
+
+
+class QaPlausibility:
+    def __init__(self, input_context: str, output_path: Path):
+        self.input_context = input_context
+        self.output_path = output_path
+        # self.sample_idx = sample_idx
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
-        self.metadata_path = self.output_path.parent / "metadata.json"
+        self.metadata_path = self.output_path.parent / METADATA_FILENAME
 
-    def writer(self, metadata: dict):
-        # metadata here will be loaded from disk by reader, it should never be just this QA data.
-        write_metadata(self.metadata_path, metadata)
+    @property
+    def successfuler(self) -> Callable[[list], None]:
+        return lambda theorems: set_qa_plausible_theorems(
+            self.output_path.parent, theorems
+        )
 
-    def extract_theorems(self, code: str) -> list[tuple[str, str]]:
-        """Extract theorem names and bodies from the code."""
-        theorem_pattern = r'theorem\s+([a-zA-Z0-9_]+)\s*[^:]*:\s*([^:]+?)\s*:=\s*(?:by\s+)?sorry'
-        return re.findall(theorem_pattern, code)
-
-    def replace_sorry_with_plausible(self, code: str, theorem_name: str) -> str:
-        """Replace sorry with plausible for a specific theorem."""
-        pattern = f'(theorem\\s+{theorem_name}[^:]*:[^:]+?:=\\s*(?:by\\s+)?)(sorry)'
-        return re.sub(pattern, r'\1plausible', code)
+    @property
+    def reader(self):
+        return read_metadata
 
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
@@ -45,7 +57,7 @@ class QaAgentPlausible(LeanAgent):
         logging.debug(f"Code:\n{code}")
 
         # Add plausible import at the top
-        code_with_import = "import Plausible\n" + code
+        code_with_import = f"import Plausible\n\n{code}"
 
         with open(self.basic, "w") as f:
             f.write(code_with_import)
@@ -74,11 +86,9 @@ class QaAgentPlausible(LeanAgent):
 
     def loop(self) -> bool:
         # Check if the unit tests passed
-        metadata = self.reader(self.output_path.parent) if self.metadata_path.exists() else {}
-        if not metadata.get("qa_unit_success", False):
+        metadata = self.reader(self.output_path.parent)
+        if not metadata["unit"]["latest_run_success"]:
             logging.warning("Unit tests did not pass, skipping plausibility check")
-            metadata["qa_plausible_success"] = False
-            self.writer(metadata)
             return False
 
         # Read the original code
@@ -86,11 +96,10 @@ class QaAgentPlausible(LeanAgent):
             original_code = f.read()
 
         # Extract all theorems
-        theorems = self.extract_theorems(original_code)
+        theorems = extract_theorems(original_code)
         if not theorems:
             logging.warning("No theorems found in the code")
-            metadata["qa_plausible_success"] = False
-            self.writer(metadata)
+            self.successfuler([])
             return False
 
         # Test each theorem for plausibility
@@ -98,24 +107,23 @@ class QaAgentPlausible(LeanAgent):
         current_code = original_code
 
         for theorem_name, _ in theorems:
-            test_code = self.replace_sorry_with_plausible(current_code, theorem_name)
+            test_code = replace_sorry_with_plausible(current_code, theorem_name)
             stdout, stderr, returncode = self.run_code(test_code)
 
             if returncode == 0:
                 plausible_theorems.append(theorem_name)
-                current_code = test_code  # Keep the plausible version for next iteration
+                current_code = (
+                    test_code  # Keep the plausible version for next iteration
+                )
                 logging.info(f"Theorem {theorem_name} is plausible")
             else:
                 logging.warning(f"Theorem {theorem_name} is not plausible")
 
-        # Update metadata with results
-        metadata["qa_plausible_success"] = len(plausible_theorems) > 0
-        metadata["plausible_theorems"] = plausible_theorems
-        self.writer(metadata)
+        self.successfuler(plausible_theorems)
 
         # Write the final version with all plausible theorems
         if plausible_theorems:
             with open(self.output_path, "w") as f:
                 f.write(current_code)
-
-        return metadata["qa_plausible_success"]
+            return True
+        return False

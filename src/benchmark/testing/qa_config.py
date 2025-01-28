@@ -15,18 +15,13 @@ You are an expert Lean 4 developer. Your task is to take a python solution and t
 - PROVIDE ONLY ONE BLOCK OF CODE WITHIN THE 3 BACKTICKS.
 - THE BLOCK OF CODE SHOULD INCLUDE ALL THE CODE YOU WANT TO SUBMIT.
 - We are now using Lean 4.13. There may be some functions or imports that have moved or changed, but you can try to fix them based on the result of your attempts.
+- Lean 4 strings are in double quotes, not single quotes
 """,
         "first_prompt": lambda soln: f"""
 Please translate the following solution into lean 4, skipping the "main" runner and test cases:
 
 ```
 {soln}
-```
-
-Append the following lean 4 tests to your solution:
-
-```
-{convert_tests(soln)}
 ```
 """,
         "continuous_prompt": lambda stdout, stderr: f"""

@@ -1,14 +1,22 @@
 import os
 import subprocess
 from pathlib import Path
+from typing import Callable
 
 from benchmark.utils.logger_setup import logging
+from benchmark.utils.metadata import (
+    METADATA_FILENAME,
+    successfuler_unit,
+    unit_reinitialize_metadata,
+)
 from benchmark.agent.types import AgentConfig
 from benchmark.agent.agents import LeanAgent
-from src.benchmark.utils.metadata import write_metadata
+from benchmark.testing.convert_units import convert_tests
 
 
 class QaAgentUnit(LeanAgent):
+    """No restarts"""
+
     def __init__(
         self,
         input_context: str,
@@ -19,17 +27,21 @@ class QaAgentUnit(LeanAgent):
         super().__init__(input_context, output_path, config, check_previous_stage)
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
-        self.metadata_path = self.output_path.parent / "metadata.json"
+        self.metadata_path = self.output_path.parent / METADATA_FILENAME
+        unit_reinitialize_metadata(self.output_path.parent)
+        with open(self.output_path.parent / "solution_clean.py") as f:
+            self.soln_clean = f.read()
 
-    def writer(self, metadata: dict):
-        # metadata here will be loaded from disk by reader, it should never be just this QA data.
-        write_metadata(self.metadata_path, metadata)
+    @property
+    def successfuler(self) -> Callable[[Path], None]:
+        return successfuler_unit
 
     def run_code(self, code: str) -> tuple[str, str, int]:
         if not code:
             warning = "Code is the empty string"
             logging.warning(warning)
             return "", warning, 1
+        code = f"{code}\n\n{convert_tests(self.soln_clean)}"
         logging.info(f"Writing code to {self.qa_lake}")
         logging.debug(f"Code:\n{code}")
         with open(self.basic, "w") as f:
@@ -66,11 +78,11 @@ class QaAgentUnit(LeanAgent):
                 code = f.read()
             return self.run_code(code)
 
-        logging.info(
-            f"{self.__class__.__name__} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
-        )
+        msg = f"{self.__class__.__name__} sample {self.sample_idx} - Loop 0/{self.max_iterations} (initial)"
+        logging.info(msg)
+        print(msg)
         response = self.send_appended_user_message(self.format_first_prompt())
-        self.conversation.append({"role": "assistant", "content": response})
+        self.append_assistant_message(response)
         code = self.extract_code(response)
         stdout, stderr, returncode = self.run_code(code)
         return stdout, stderr, returncode
@@ -81,31 +93,25 @@ class QaAgentUnit(LeanAgent):
             return False
         stdout, stderr, returncode = self.loop_init()
 
-        metadata = self.reader(self.output_path.parent) if self.metadata_path.exists() else {}
-
         if self.stopping_condition(returncode):
-            metadata["qa_unit_success"] = True
-            self.writer(metadata)
+            self.successfuler(self.output_path.parent)
             return True
 
         for i in range(self.max_iterations):
             msg = f"{self.executable} sample {self.sample_idx} - Loop {i+1}/{self.max_iterations}"
             print(msg)
             logging.info(msg)
-
-            response = self.send_appended_user_message(self.continuous_prompt(stdout, stderr))
+            self.incrementor(self.output_path.parent)
+            response = self.send_appended_user_message(
+                self.continuous_prompt(stdout, stderr)
+            )
             self.append_assistant_message(response)
             code = self.extract_code(response)
 
             stdout, stderr, returncode = self.run_code(code)
             if self.stopping_condition(returncode):
-                metadata["qa_unit_success"] = True
-                self.writer(metadata)
+                self.successfuler(self.output_path.parent)
                 break
-
-        if not self.stopping_condition(returncode):
-            metadata["qa_unit_success"] = False
-            self.writer(metadata)
 
         logging.info(f"Final QA Unit return code: {returncode}")
         return self.stopping_condition(returncode)

@@ -2,8 +2,8 @@ from pathlib import Path
 from argparse import ArgumentParser
 from benchmark.agent.types import AgentConfig
 from benchmark.testing.qa_config import sonnet_cfg as sonnet_qa_cfg
-from benchmark.testing.qa_agent_unit import QaAgentUnit
-from benchmark.testing.qa_agent_plausible import QaAgentPlausible
+from benchmark.testing.agent import QaAgentUnit
+from benchmark.testing.plausibility import QaPlausibility
 
 
 def mk_parser() -> ArgumentParser:
@@ -28,7 +28,7 @@ def mk_parser() -> ArgumentParser:
 
 
 # TODO: handle resets
-def autoformalize(py_soln_clean: str, out_path: Path, sample_idx: int) -> bool:
+def autoformalize(py_soln_clean: Path, out_path: Path, sample_idx: int) -> bool:
     with open(py_soln_clean, "r") as f:
         content = f.read()
 
@@ -44,19 +44,22 @@ def autoformalize(py_soln_clean: str, out_path: Path, sample_idx: int) -> bool:
         f"Was the unit QA generation for sample {sample_idx} successful? {unit_success}"
     )
 
+    return unit_success
+
+
+def plausibilize(spec_path: Path | str, out_path: Path, sample_idx: int) -> bool:
+    with open(spec_path, "r") as f:
+        content = f.read()
     # Second stage: Plausibility testing QA
-    plausible_agent = QaAgentPlausible(
+    plausible_agent = QaPlausibility(
         input_context=content,
         output_path=out_path,
-        config=AgentConfig(**sonnet_qa_cfg, sample_idx=sample_idx),
-        check_previous_stage=True,
     )
     plausible_success = plausible_agent.loop()
     print(
         f"Was the plausibility QA for sample {sample_idx} successful? {plausible_success}"
     )
-
-    return unit_success and plausible_success
+    return plausible_success
 
 
 def one():
@@ -67,8 +70,18 @@ def one():
         idx = f"{sample_idx:04d}"
         py_soln_clean = root_path / idx / "solution_clean.py"
         out_path = root_path / idx / "SpecQA.lean"
-        autoformalize(py_soln_clean, out_path, sample_idx)
+        success = autoformalize(py_soln_clean, out_path, sample_idx)
+        if not success:
+            with open(root_path / idx / "keep.txt", "w") as f:
+                f.write("0")
 
 
 def two():
-    pass
+    """Assumes `SpecQA.lean` exists for all samples"""
+    args = mk_parser().parse_args()
+    root_path = Path("artefacts") / "apps" / args.split
+    for sample_idx in range(args.start_idx, args.end_idx + 1):
+        idx = f"{sample_idx:04d}"
+        spec = root_path / idx / "SpecQA.lean"
+        out_path = root_path / idx / "SpecQAPlsbl.lean"
+        success = plausibilize(spec, out_path, sample_idx)
