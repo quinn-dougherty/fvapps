@@ -2,77 +2,55 @@ import Plausible
 
 import Plausible
 
-def abs (n : Int) : Int :=
-  if n < 0 then -n else n
+import Lean
 
-def myMax (x y : Int) : Int :=
-  if x ≥ y then x else y
-
-def myMin (x y : Int) : Int :=
-  if x ≤ y then x else y
-
-def solve_max_diagonal_moves (n m k : Int) : Int := 
-  -- Store absolute values and organize x as max, y as min
-  let x := abs n
-  let y := abs m
-  let x' := myMax x y
-  let y' := myMin x y
+def count_alice_score (s : String) : Nat :=
+  -- Split string on '0's and convert to array of string lengths
+  let blocks := s.split (· == '0')
+    |>.filter (fun p => p.length > 0)
+    |>.map String.length
+    |>.toArray
   
-  -- First stage: handle parity difference
-  let (x'', y'', k') := 
-    if x' % 2 ≠ k % 2 then
-      (x', y' - 1, k - 1)
-    else
-      (x', y', k)
-
-  -- Second stage: check if destination is reachable
-  if x'' > k' then
-    -1
-  else
-    -- Third stage: handle odd delta
-    if (x'' - y'') % 2 = 1 then
-      k' - 1
-    else
-      k'
-
-theorem test1 : solve_max_diagonal_moves 2 2 3 = 1 := rfl
-theorem test2 : solve_max_diagonal_moves 4 3 7 = 6 := rfl 
-theorem test3 : solve_max_diagonal_moves 10 1 9 = -1 := rfl
+  -- Sort lengths in descending order  
+  let sorted := blocks.insertionSort (· > ·)
+  
+  -- Calculate Alice's score by summing even-indexed values
+  let indices := List.range sorted.size |>.filter (· % 2 == 0)
+  indices.foldl (fun sum i => sum + sorted[i]!) 0
 
 /--
-info: 1
+info: 4
 -/
 #guard_msgs in
-#eval solve_max_diagonal_moves 2 2 3
-
+#eval count_alice_score "01111001"
 
 /--
 info: 6
 -/
 #guard_msgs in
-#eval solve_max_diagonal_moves 4 3 7
-
+#eval count_alice_score "111111"
 
 /--
-info: -1
+info: 3
 -/
 #guard_msgs in
-#eval solve_max_diagonal_moves 10 1 9
+#eval count_alice_score "101010101"
 
-theorem result_bound (n m k : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) (h3: 0 <= k ∧ k <= 2000) :
-  let r := solve_max_diagonal_moves n m k
-  r = -1 ∨ r ≤ k := by plausible
-theorem result_parity (n m k : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) (h3: 0 <= k ∧ k <= 2000) :
-  let r := solve_max_diagonal_moves n m k
-  let max_dist := max (abs n) (abs m)
-  r ≠ -1 → (r % 2 = max_dist % 2 ∨ r % 2 = (max_dist - 1) % 2) := by plausible
-theorem insufficient_moves (n : Int) (h: 1 <= n ∧ n <= 1000) :
-  let k := abs n - 1
-  solve_max_diagonal_moves n n k = -1 := by plausible
-theorem symmetry (n m : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) :
-  let k := max (abs n) (abs m) * 2
-  let r1 := solve_max_diagonal_moves n m k
-  let r2 := solve_max_diagonal_moves (-n) m k
-  let r3 := solve_max_diagonal_moves n (-m) k
-  let r4 := solve_max_diagonal_moves (-n) (-m) k
-  r1 = r2 ∧ r2 = r3 ∧ r3 = r4 := by plausible
+theorem result_not_exceed_input_length 
+  (s : String) : 
+  count_alice_score s ≤ s.length := 
+  by plausible
+theorem result_nonnegative
+  (s : String) :
+  count_alice_score s ≥ 0 :=
+  by plausible
+theorem empty_or_zeros_returns_zero
+  (s : String) :
+  (s.isEmpty ∨ s.all (· = '0')) → count_alice_score s = 0 :=
+  by plausible
+theorem all_ones_full_score
+  (s : String) :
+  s.all (· = '1') →
+  s.length > 0 →
+  count_alice_score s = s.length :=
+  by plausible

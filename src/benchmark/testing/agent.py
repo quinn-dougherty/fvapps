@@ -10,6 +10,7 @@ from benchmark.utils.metadata import (
     read_unit,
     successfuler_unit,
     unit_reinitialize_metadata,
+    set_keep,
 )
 from benchmark.agent.types import AgentConfig
 from benchmark.agent.agents import LeanAgent
@@ -123,5 +124,8 @@ class QaAgentUnit(LeanAgent):
                 self.successfuler(self.output_path.parent)
                 break
 
+        stopping_condition = self.stopping_condition(returncode)
         logging.info(f"Final QA Unit return code: {returncode}")
-        return self.stopping_condition(returncode)
+        if not stopping_condition:
+            set_keep(self.output_path.parent, False)
+        return stopping_condition

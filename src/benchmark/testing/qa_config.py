@@ -31,9 +31,9 @@ We'll convert the test cases to lean unit tests with the following format:
 -/
 #guard_msgs in
 #eval <function_name> <args>
+```
 
 Make sure the function name in your autoformalization matches the function name in the original code.
-```
 """,
         "continuous_prompt": lambda stdout, stderr: f"""
 Running the code produced the following output:
@@ -51,6 +51,9 @@ Standard error:
 Please fix your original output, keeping in mind the strong guidelines above.
 
 Do not copy the `#guard_msgs in #eval` block from the lean output. We will add that for you.
+
+If you see a `#` in front of any list argument (`["foo"]`) in the lean 4 `#guard_msgs in` block, make the corresponding argument type is `Array` not `List`.
+If there is no `#` in front of the square bracket, then make sure the argument type is `List` not `Array`.
 """,
     },
     **cfg["common"],

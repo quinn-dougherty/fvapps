@@ -30,10 +30,17 @@ class AssertVisitor(ast.NodeVisitor):
         self.collection = array_or_list(outpath)
 
     def visit_Assign(self, node):
-        # Capture variable assignments before assert statements
-        if len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            name = node.targets[0].id
-            self.current_test_vars[name] = ast.unparse(node.value)
+        # Handle single assignments
+        if len(node.targets) == 1:
+            target = node.targets[0]
+            if isinstance(target, ast.Name):
+                self.current_test_vars[target.id] = ast.unparse(node.value)
+            # Handle tuple unpacking
+            elif isinstance(target, ast.Tuple):
+                if isinstance(node.value, ast.Tuple):
+                    for name, value in zip(target.elts, node.value.elts):
+                        if isinstance(name, ast.Name):
+                            self.current_test_vars[name.id] = ast.unparse(value)
 
     def visit_Assert(self, node):
         if isinstance(node.test, ast.Compare) and len(node.test.ops) == 1:
