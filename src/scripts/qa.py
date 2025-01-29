@@ -47,15 +47,18 @@ def autoformalize(py_soln_clean: Path, out_path: Path, sample_idx: int) -> bool:
     return unit_success
 
 
-def plausibilize(spec_path: Path | str, out_path: Path, sample_idx: int) -> bool:
-    with open(spec_path, "r") as f:
-        content = f.read()
+def plausibilize(spec_path: Path, out_path: Path, sample_idx: int) -> bool:
+    with open(spec_path / "SpecQA.lean", "r") as f:
+        spec_qa = f.read()
+    with open(spec_path / "Spec.lean", "r") as f:
+        spec = f.read()
     # Second stage: Plausibility testing QA
-    plausible_agent = QaPlausibility(
-        input_context=content,
+    plausibility = QaPlausibility(
+        spec=spec,
+        spec_qa=spec_qa,
         output_path=out_path,
     )
-    plausible_success = plausible_agent.loop()
+    plausible_success = plausibility.loop()
     print(
         f"Was the plausibility QA for sample {sample_idx} successful? {plausible_success}"
     )
@@ -82,6 +85,6 @@ def two():
     root_path = Path("artefacts") / "apps" / args.split
     for sample_idx in range(args.start_idx, args.end_idx + 1):
         idx = f"{sample_idx:04d}"
-        spec = root_path / idx / "SpecQA.lean"
+        spec_path = root_path / idx
         out_path = root_path / idx / "SpecQAPlsbl.lean"
-        success = plausibilize(spec, out_path, sample_idx)
+        success = plausibilize(spec_path, out_path, sample_idx)

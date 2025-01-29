@@ -2,7 +2,6 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from functools import partial
 from typing import Callable
 
 from benchmark.utils.logger_setup import logging
@@ -10,16 +9,26 @@ from benchmark.utils.metadata import (
     METADATA_FILENAME,
     set_qa_plausible_theorems,
     read_metadata,
-    set_qa_plausible_theorems,
+    set_keep,
 )
 
 
-def extract_theorems(code: str) -> list[tuple[str, str]]:
+def theorem_name(theorem: str) -> str:
+    return theorem.split(" ")[1]
+
+
+def extract_theorems(code: str) -> list[str]:
     """Extract theorem names and bodies from the code."""
-    theorem_pattern = (
-        r"theorem\s+([a-zA-Z0-9_]+)\s*[^:]*:\s*([^:]+?)\s*:=\s*(?:by\s+)?sorry"
-    )
-    return re.findall(theorem_pattern, code)
+    split = code.split("\n\n")
+    theorems = []
+    for item in split:
+        if item.startswith("theorem"):
+            theorems.append(item.replace("sorry", "by plausible"))
+        elif item.startswith("def"):
+            continue
+        continue
+
+    return theorems
 
 
 def replace_sorry_with_plausible(code: str, theorem_name: str) -> str:
@@ -29,13 +38,15 @@ def replace_sorry_with_plausible(code: str, theorem_name: str) -> str:
 
 
 class QaPlausibility:
-    def __init__(self, input_context: str, output_path: Path):
-        self.input_context = input_context
+    def __init__(self, spec: str, spec_qa: str, output_path: Path):
+        self.spec = spec
+        self.spec_qa = spec_qa
         self.output_path = output_path
         # self.sample_idx = sample_idx
         self.qa_lake = Path("artefacts") / "qa"
         self.basic = self.qa_lake / "Qa" / "Basic.lean"
         self.metadata_path = self.output_path.parent / METADATA_FILENAME
+        self.implausible_theorems = []
 
     @property
     def successfuler(self) -> Callable[[list], None]:
@@ -84,19 +95,23 @@ class QaPlausibility:
 
         return result.stdout, result.stderr, result.returncode
 
+    def pruner(self) -> None:
+        spec = self.spec
+        for theorem in self.implausible_theorems:
+            spec = spec.replace(theorem.replace("by plausible", "sorry"), "")
+        with open(self.output_path.parent / "Spec.lean", "w") as f:
+            f.write(spec.strip())
+
     def loop(self) -> bool:
         # Check if the unit tests passed
-        metadata = self.reader(self.output_path.parent)
+        metadata = self.reader(self.output_path.parent / METADATA_FILENAME)
         if not metadata["unit"]["latest_run_success"]:
+            print("unit tests did not pass;", end="\t")
             logging.warning("Unit tests did not pass, skipping plausibility check")
             return False
 
-        # Read the original code
-        with open(self.output_path, "r") as f:
-            original_code = f.read()
-
         # Extract all theorems
-        theorems = extract_theorems(original_code)
+        theorems = extract_theorems(self.spec)
         if not theorems:
             logging.warning("No theorems found in the code")
             self.successfuler([])
@@ -104,26 +119,34 @@ class QaPlausibility:
 
         # Test each theorem for plausibility
         plausible_theorems = []
-        current_code = original_code
+        implausible_theorems = []
+        current_code = f"import Plausible\n\n{self.spec_qa}"
 
-        for theorem_name, _ in theorems:
-            test_code = replace_sorry_with_plausible(current_code, theorem_name)
+        for theorem in theorems:
+            test_code = f"{current_code}\n{theorem}"
             stdout, stderr, returncode = self.run_code(test_code)
-
+            thm_name = theorem_name(theorem)
             if returncode == 0:
-                plausible_theorems.append(theorem_name)
+                plausible_theorems.append(thm_name)
                 current_code = (
                     test_code  # Keep the plausible version for next iteration
                 )
-                logging.info(f"Theorem {theorem_name} is plausible")
+                logging.info(f"Theorem {thm_name} is plausible")
             else:
-                logging.warning(f"Theorem {theorem_name} is not plausible")
+                implausible_theorems.append(theorem)
+                logging.warning(f"Theorem {thm_name} is not plausible")
 
+        self.implausible_theorems = implausible_theorems
         self.successfuler(plausible_theorems)
 
-        # Write the final version with all plausible theorems
+        # Write the final SpecQAPlsbl.lean version with all plausible theorems
+        with open(self.output_path, "w") as f:
+            f.write(current_code)
         if plausible_theorems:
-            with open(self.output_path, "w") as f:
-                f.write(current_code)
+            # remove implausible theorems from Spec.lean
+            self.pruner()
+            set_keep(self.output_path.parent, True)
             return True
+        # set keep.txt to false
+        set_keep(self.output_path.parent, False)
         return False

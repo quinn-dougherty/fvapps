@@ -99,3 +99,13 @@ def set_qa_plausible_theorems(path: Path, theorems: list):
     metadata = read_metadata(path / METADATA_FILENAME)
     metadata["plausible_theorems"] = theorems
     write_metadata(path / METADATA_FILENAME, metadata)
+
+
+def read_keep(path: Path) -> bool:
+    with open(path / "keep.txt", "r") as f:
+        return bool(int(f.read()))
+
+
+def set_keep(path: Path, keep: bool):
+    with open(path / "keep.txt", "w") as f:
+        f.write(str(int(keep)))

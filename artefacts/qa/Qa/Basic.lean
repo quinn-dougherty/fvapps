@@ -1,81 +1,78 @@
-structure WordCounts where
-  zo : Nat := 0  -- 0->1
-  oz : Nat := 0  -- 1->0
-  zz : Nat := 0  -- 0->0
-  oo : Nat := 0  -- 1->1
-  ozs : List Nat := []  -- indices of 1->0 words
-  zos : List Nat := []  -- indices of 0->1 words
-  ozss : List String := []  -- list of 1->0 words 
-  zoss : List String := []  -- list of 0->1 words
+import Plausible
 
-def solve (n : Nat) (words : List String) : List Nat := 
-  -- Initialize counters and lists
-  let counts := Id.run do
-    let mut c : WordCounts := {}
-    for i in [0:n] do
-      let word := words[i]!
-      if word.front == '0' && word.back == '1' then
-        c := {c with 
-          zo := c.zo + 1,
-          zos := c.zos ++ [i + 1],
-          zoss := c.zoss ++ [word]
-        }
-      else if word.front == '1' && word.back == '0' then
-        c := {c with 
-          oz := c.oz + 1,
-          ozs := c.ozs ++ [i + 1],
-          ozss := c.ozss ++ [word]
-        }
-      else if word.front == '0' && word.back == '0' then
-        c := {c with zz := c.zz + 1}
-      else
-        c := {c with oo := c.oo + 1}
-    c
+import Plausible
 
-  -- Handle special case
-  if counts.zz > 0 && counts.oo > 0 && counts.oz == 0 && counts.zo == 0 then
-    [-1]
-  else if counts.zo > counts.oz then
-    Id.run do
-      let mut ans := []
-      let mut need := (counts.zo - counts.oz) / 2
-      let mut i := 0
-      while need > 0 do
-        let word := words[counts.zos[i]! - 1]!
-        let rev := String.mk (word.data.reverse)
-        if !counts.ozss.contains rev then
-          ans := ans ++ [counts.zos[i]!]
-          need := need - 1
-        i := i + 1
-      [ans.length] ++ ans
-  else 
-    Id.run do
-      let mut ans := []
-      let mut need := (counts.oz - counts.zo) / 2
-      let mut i := 0
-      while need > 0 do
-        let word := words[counts.ozs[i]! - 1]!
-        let rev := String.mk (word.data.reverse)
-        if !counts.zoss.contains rev then
-          ans := ans ++ [counts.ozs[i]!]
-          need := need - 1
-        i := i + 1
-      [ans.length] ++ ans
+def abs (n : Int) : Int :=
+  if n < 0 then -n else n
+
+def myMax (x y : Int) : Int :=
+  if x ≥ y then x else y
+
+def myMin (x y : Int) : Int :=
+  if x ≤ y then x else y
+
+def solve_max_diagonal_moves (n m k : Int) : Int := 
+  -- Store absolute values and organize x as max, y as min
+  let x := abs n
+  let y := abs m
+  let x' := myMax x y
+  let y' := myMin x y
+  
+  -- First stage: handle parity difference
+  let (x'', y'', k') := 
+    if x' % 2 ≠ k % 2 then
+      (x', y' - 1, k - 1)
+    else
+      (x', y', k)
+
+  -- Second stage: check if destination is reachable
+  if x'' > k' then
+    -1
+  else
+    -- Third stage: handle odd delta
+    if (x'' - y'') % 2 = 1 then
+      k' - 1
+    else
+      k'
+
+theorem test1 : solve_max_diagonal_moves 2 2 3 = 1 := rfl
+theorem test2 : solve_max_diagonal_moves 4 3 7 = 6 := rfl 
+theorem test3 : solve_max_diagonal_moves 10 1 9 = -1 := rfl
 
 /--
-info: [1, 3]
+info: 1
 -/
 #guard_msgs in
-#eval solve 4 ["0001", "1000", "0011", "0111"]
+#eval solve_max_diagonal_moves 2 2 3
+
 
 /--
-info: [-1]
+info: 6
 -/
 #guard_msgs in
-#eval solve 3 ["010", "101", "0"]
+#eval solve_max_diagonal_moves 4 3 7
+
 
 /--
-info: [0]
+info: -1
 -/
 #guard_msgs in
-#eval solve 2 ["00000", "00001"]
+#eval solve_max_diagonal_moves 10 1 9
+
+theorem result_bound (n m k : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) (h3: 0 <= k ∧ k <= 2000) :
+  let r := solve_max_diagonal_moves n m k
+  r = -1 ∨ r ≤ k := by plausible
+theorem result_parity (n m k : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) (h3: 0 <= k ∧ k <= 2000) :
+  let r := solve_max_diagonal_moves n m k
+  let max_dist := max (abs n) (abs m)
+  r ≠ -1 → (r % 2 = max_dist % 2 ∨ r % 2 = (max_dist - 1) % 2) := by plausible
+theorem insufficient_moves (n : Int) (h: 1 <= n ∧ n <= 1000) :
+  let k := abs n - 1
+  solve_max_diagonal_moves n n k = -1 := by plausible
+theorem symmetry (n m : Int) (h: -1000 <= n ∧ n <= 1000) (h2: -1000 <= m ∧ m <= 1000) :
+  let k := max (abs n) (abs m) * 2
+  let r1 := solve_max_diagonal_moves n m k
+  let r2 := solve_max_diagonal_moves (-n) m k
+  let r3 := solve_max_diagonal_moves n (-m) k
+  let r4 := solve_max_diagonal_moves (-n) (-m) k
+  r1 = r2 ∧ r2 = r3 ∧ r3 = r4 := by plausible
