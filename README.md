@@ -1,5 +1,7 @@
 # FV-APPS
 
+![pipeline](src/benchmark/postprocessing/pipeline.png)
+
 Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated theorem statements.
 
 [HuggingFace](https://huggingface.co/datasets/quinn-dougherty/fvapps):
