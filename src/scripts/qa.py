@@ -73,7 +73,11 @@ def one():
         idx = f"{sample_idx:04d}"
         py_soln_clean = root_path / idx / "solution_clean.py"
         out_path = root_path / idx / "SpecQA.lean"
-        success = autoformalize(py_soln_clean, out_path, sample_idx)
+        try:
+            success = autoformalize(py_soln_clean, out_path, sample_idx)
+        except Exception as e:
+            print(e)
+            continue
         if not success:
             with open(root_path / idx / "keep.txt", "w") as f:
                 f.write("0")
@@ -87,4 +91,11 @@ def two():
         idx = f"{sample_idx:04d}"
         spec_path = root_path / idx
         out_path = root_path / idx / "SpecQAPlsbl.lean"
-        success = plausibilize(spec_path, out_path, sample_idx)
+        try:
+            success = plausibilize(spec_path, out_path, sample_idx)
+        except Exception as e:
+            print(e)
+            continue
+        if not success:
+            with open(root_path / idx / "keep.txt", "w") as f:
+                f.write("0")

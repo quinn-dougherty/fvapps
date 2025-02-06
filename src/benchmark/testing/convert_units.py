@@ -84,3 +84,9 @@ def convert_tests(python_code: str, outpath: Path) -> str:
     visitor = AssertVisitor(outpath=outpath)
     visitor.visit(tree)
     return "\n".join(visitor.test_cases)
+
+
+def convert_tests_file(soln_py: Path) -> str:
+    with open(soln_py, "r") as f:
+        python_code = f.read()
+    return convert_tests(python_code, outpath=soln_py.parent)

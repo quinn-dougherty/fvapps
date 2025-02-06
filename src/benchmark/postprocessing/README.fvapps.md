@@ -8,12 +8,15 @@ tags:
 - software_engineering
 - proof
 - verification
+license: mit
+task_categories:
+- text-generation
 ---
-# Formally Verified APPS
+# Proving the Coding Interview: Formally Verified APPS
 
 by Ronak Mehta and Quinn Dougherty. Based on APPS by Hendrycks et al.
 
-**BETA/DRAFT** 
+> We introduce the Formally Verified Automated Programming Progress Standards, or FVAPPS, a benchmark of 4712 samples for writing programs and proving their correctness, the largest formal verification benchmark. Previously, APPS provided a benchmark and dataset for programming puzzles to be completed in Python and checked against unit tests, of the kind seen in technical assessments in the software engineering industry. Building upon recent approaches for benchmarks in interactive theorem proving, we generalize the unit tests to Lean 4 theorems given without proof (i.e., using Lean's ``sorry'' keyword). On the 406 theorems of 100 randomly selected samples, Sonnet accomplished 30\% and Gemini accomplished 18\%. We challenge the machine learning and program synthesis communities to solve both each general purpose programming problem and its associated correctness specifications. The benchmark is available at https://huggingface.co/datasets/quinn-dougherty/fvapps.
 
 ## Example task
 
@@ -39,6 +42,25 @@ theorem solve_elections_upper_bound (n : Nat) (voters : List (Nat × Nat)) : sol
 theorem solve_elections_zero_votes (n : Nat) (voters : List (Nat × Nat)) : (List.all voters (λ pair => pair.1 = 0)) → solve_elections n voters = 0 := sorry
 
 theorem solve_elections_single_zero_vote : solve_elections 1 [(0, 5)] = 0 := sorry
+
+/--
+info: 8
+-/
+#guard_msgs in
+#eval solve_elections 3 [(1, 5), (2, 10), (2, 8)]
+
+/--
+info: 0
+-/
+#guard_msgs in
+#eval solve_elections 7 [(0, 1), (3, 1), (1, 1), (6, 1), (1, 1), (4, 1), (4, 1)]
+
+/--
+info: 7
+-/
+#guard_msgs in
+#eval solve_elections 6 [(2, 6), (2, 3), (2, 8), (2, 7), (4, 4), (5, 5)]
+
 ```
 
 ## Code to generate benchmark and baselines

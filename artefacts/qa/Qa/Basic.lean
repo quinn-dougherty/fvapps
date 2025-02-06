@@ -4,53 +4,39 @@ import Plausible
 
 import Lean
 
-def count_alice_score (s : String) : Nat :=
-  -- Split string on '0's and convert to array of string lengths
-  let blocks := s.split (· == '0')
-    |>.filter (fun p => p.length > 0)
-    |>.map String.length
-    |>.toArray
+/-- Helper to count occurrences of char in string -/
+def countChar (str : String) (c : Char) : Nat :=
+  str.toList.filter (· == c) |>.length
+
+/-- Return list of words matching criteria for vowels, consonants and forbidden chars -/
+def wanted_words (vowels consonants : Nat) (forbidden : List Char) : Array String := Id.run do
+  let WORD_LIST := #["strength", "afterwards", "background", "photograph", "successful", "understand"]
+  let vowel_chars := ['a', 'e', 'i', 'o', 'u']
   
-  -- Sort lengths in descending order  
-  let sorted := blocks.insertionSort (· > ·)
-  
-  -- Calculate Alice's score by summing even-indexed values
-  let indices := List.range sorted.size |>.filter (· % 2 == 0)
-  indices.foldl (fun sum i => sum + sorted[i]!) 0
+  WORD_LIST.filter fun word => 
+    -- Check word length matches total vowels + consonants
+    word.length = vowels + consonants ∧
+    -- Check vowel count matches required number 
+    (vowel_chars.map (countChar word) |>.foldl (·+·) 0) = vowels ∧
+    -- Check no forbidden chars present
+    !(forbidden.any fun c => word.toList.contains c)
 
-/--
-info: 4
--/
-#guard_msgs in
-#eval count_alice_score "01111001"
 
-/--
-info: 6
--/
-#guard_msgs in
-#eval count_alice_score "111111"
-
-/--
-info: 3
--/
-#guard_msgs in
-#eval count_alice_score "101010101"
-
-theorem result_not_exceed_input_length 
-  (s : String) : 
-  count_alice_score s ≤ s.length := 
-  by plausible
-theorem result_nonnegative
-  (s : String) :
-  count_alice_score s ≥ 0 :=
-  by plausible
-theorem empty_or_zeros_returns_zero
-  (s : String) :
-  (s.isEmpty ∨ s.all (· = '0')) → count_alice_score s = 0 :=
-  by plausible
-theorem all_ones_full_score
-  (s : String) :
-  s.all (· = '1') →
-  s.length > 0 →
-  count_alice_score s = s.length :=
-  by plausible
+theorem result_are_strings (v c : Nat) (f : List Char) :
+  ∀ (w : String), w ∈ wanted_words v c f → w.length ≥ 0 
+  := by plausible
+theorem exact_vowel_count (v c : Nat) (f : List Char) :
+  ∀ (w : String), w ∈ wanted_words v c f →
+  (List.filter isVowel w.data).length = v
+  := by plausible
+theorem exact_total_length (v c : Nat) (f : List Char) :
+  ∀ (w : String), w ∈ wanted_words v c f →
+  w.length = v + c
+  := by plausible
+theorem no_forbidden_chars (v c : Nat) (f : List Char) :
+  ∀ (w : String), w ∈ wanted_words v c f →
+  ∀ (x : Char), x ∈ f → ¬(x ∈ w.data)
+  := by plausible
+theorem all_forbidden_empty (v c : Nat) :
+  wanted_words v c "abcdefghijklmnopqrstuvwxyz".data = []
+  := by plausible
