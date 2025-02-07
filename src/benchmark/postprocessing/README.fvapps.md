@@ -14,11 +14,13 @@ task_categories:
 ---
 # Proving the Coding Interview: Formally Verified APPS
 
+[Paper](https://drive.google.com/file/d/1fmx0NaKKzvH5gcFFNMJLL9BW2gMIbFkc/view?usp=sharing)
+
 ![pipeline](pipeline.png)
 
 by Ronak Mehta and Quinn Dougherty. Based on APPS by Hendrycks et al.
 
-> We introduce the Formally Verified Automated Programming Progress Standards, or FVAPPS, a benchmark of 4712 samples for writing programs and proving their correctness, the largest formal verification benchmark. Previously, APPS provided a benchmark and dataset for programming puzzles to be completed in Python and checked against unit tests, of the kind seen in technical assessments in the software engineering industry. Building upon recent approaches for benchmarks in interactive theorem proving, we generalize the unit tests to Lean 4 theorems given without proof (i.e., using Lean's ``sorry'' keyword). On the 406 theorems of 100 randomly selected samples, Sonnet accomplished 30\% and Gemini accomplished 18\%. We challenge the machine learning and program synthesis communities to solve both each general purpose programming problem and its associated correctness specifications. The benchmark is available at https://huggingface.co/datasets/quinn-dougherty/fvapps.
+> Abstract—We introduce the Formally Verified Automated Programming Progress Standards, or FVAPPS, a benchmark of 4715 samples for writing programs and proving their correctness, the largest formal verification benchmark, including 1083 curated and quality controlled samples. Previously, APPS provided a benchmark and dataset for programming puzzles to be completed in Python and checked against unit tests, of the kind seen in technical assessments in the software engineering industry. Building upon recent approaches for benchmarks in interactive theorem proving, we generalize the unit tests to Lean 4 theorems given without proof (i.e., using Lean’s “sorry” keyword). On the 406 theorems of 100 randomly selected samples, Sonnet correctly proves 30% and Gemini correctly proves 18%. We challenge the machine learning and program synthesis communities to solve both each general purpose programming problem and its associated correctness specifications. The benchmark is available at https://huggingface.co/datasets/quinn-dougherty/fvapps.
 
 ## Example task
 

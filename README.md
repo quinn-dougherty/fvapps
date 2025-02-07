@@ -10,7 +10,7 @@ Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated the
 
 [HuggingFace](https://huggingface.co/datasets/quinn-dougherty/fvapps):
 ``` python
-datasets.load_dataset("quinn-dougherty/fvapps")
+datasets.load_dataset("quinn-dougherty/fvapps", split="train")
 ```
 
 ## Reproducing our baselines
