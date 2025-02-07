@@ -1,4 +1,8 @@
-# FV-APPS
+# Proving the Coding Interview: Formally Verified APPS
+
+At ICSE 2025's LLM4Code workshop.
+
+### [Paper](https://drive.google.com/file/d/1fmx0NaKKzvH5gcFFNMJLL9BW2gMIbFkc/view?usp=sharing)
 
 ![pipeline](src/benchmark/postprocessing/pipeline.png)
 
@@ -94,6 +98,13 @@ options:
 ```
 
 `rye run fvapps --skip_lean` depends on `rye run preprocess` to have been run before, and `rye run fvapps --skip_python` depends on both the preprocessing step and the fvapps python step to have been run before. (`FileNotFoundError` will guide you toward this understanding regardless)
+
+### Quality assurance
+
+```
+$ rye run qa_autoformalize
+$ rye run qa_plausible
+```
 
 ### Postprocess
 
