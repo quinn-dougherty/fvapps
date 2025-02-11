@@ -14,17 +14,17 @@ task_categories:
 ---
 # Proving the Coding Interview: Formally Verified APPS
 
-[Paper](https://drive.google.com/file/d/1fmx0NaKKzvH5gcFFNMJLL9BW2gMIbFkc/view?usp=sharing)
+[Paper](https://arxiv.org/abs/2502.05714)
 
-![pipeline](pipeline.png)
+![pipeline](https://raw.githubusercontent.com/quinn-dougherty/fvapps/refs/heads/master/src/benchmark/postprocessing/pipeline.png)
 
 by Ronak Mehta and Quinn Dougherty. Based on APPS by Hendrycks et al.
 
-> Abstract—We introduce the Formally Verified Automated Programming Progress Standards, or FVAPPS, a benchmark of 4715 samples for writing programs and proving their correctness, the largest formal verification benchmark, including 1083 curated and quality controlled samples. Previously, APPS provided a benchmark and dataset for programming puzzles to be completed in Python and checked against unit tests, of the kind seen in technical assessments in the software engineering industry. Building upon recent approaches for benchmarks in interactive theorem proving, we generalize the unit tests to Lean 4 theorems given without proof (i.e., using Lean’s “sorry” keyword). On the 406 theorems of 100 randomly selected samples, Sonnet correctly proves 30% and Gemini correctly proves 18%. We challenge the machine learning and program synthesis communities to solve both each general purpose programming problem and its associated correctness specifications. The benchmark is available at https://huggingface.co/datasets/quinn-dougherty/fvapps.
+> We introduce the Formally Verified Automated Programming Progress Standards, or FVAPPS, a benchmark of 4715 samples for writing programs and proving their correctness, the largest formal verification benchmark, including 1083 curated and quality controlled samples. Previously, APPS provided a benchmark and dataset for programming puzzles to be completed in Python and checked against unit tests, of the kind seen in technical assessments in the software engineering industry. Building upon recent approaches for benchmarks in interactive theorem proving, we generalize the unit tests to Lean 4 theorems given without proof (i.e., using Lean’s “sorry” keyword). On the 406 theorems of 100 randomly selected samples, Sonnet correctly proves 30% and Gemini correctly proves 18%. We challenge the machine learning and program synthesis communities to solve both each general purpose programming problem and its associated correctness specifications. The benchmark is available at https://huggingface.co/datasets/quinn-dougherty/fvapps.
 
 ## Example task
 
-The goal is to remove every `sorry` but still make the lean executable happy.
+The goal is to remove every `sorry` but still make the Lean executable happy.
 
 Corresponding to [`APPS` problem id 23](https://huggingface.co/datasets/codeparrot/apps/viewer/all/train?row=23): 
 ```lean
@@ -64,9 +64,24 @@ info: 7
 -/
 #guard_msgs in
 #eval solve_elections 6 [(2, 6), (2, 3), (2, 8), (2, 7), (4, 4), (5, 5)]
-
 ```
+
+The dataset generation and baselines were done with Lean pin `leanprover/lean4:v4.12.0`
 
 ## Code to generate benchmark and baselines
 
 [GitHub](https://github.com/quinn-dougherty/fvapps)
+
+## Citation
+
+``` bibtex
+@misc{dougherty2025provingcodinginterviewbenchmark,
+      title={Proving the Coding Interview: A Benchmark for Formally Verified Code Generation}, 
+      author={Quinn Dougherty and Ronak Mehta},
+      year={2025},
+      eprint={2502.05714},
+      archivePrefix={arXiv},
+      primaryClass={cs.SE},
+      url={https://arxiv.org/abs/2502.05714}, 
+}
+```

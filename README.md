@@ -1,8 +1,8 @@
 # Proving the Coding Interview: Formally Verified APPS
 
-At ICSE 2025's LLM4Code workshop.
+At ICSE 2025's [LLM4Code](https://llm4code.github.io/) workshop.
 
-### [Paper](https://drive.google.com/file/d/1fmx0NaKKzvH5gcFFNMJLL9BW2gMIbFkc/view?usp=sharing)
+### [Paper](https://arxiv.org/abs/2502.05714)
 
 ![pipeline](src/benchmark/postprocessing/pipeline.png)
 
@@ -11,6 +11,20 @@ Lifting [APPS](https://github.com/hendrycks/apps) to Lean with LLM-generated the
 [HuggingFace](https://huggingface.co/datasets/quinn-dougherty/fvapps):
 ``` python
 datasets.load_dataset("quinn-dougherty/fvapps", split="train")
+```
+
+If you'd like to cite FVAPPS, please use
+
+``` bibtex
+@misc{dougherty2025provingcodinginterviewbenchmark,
+      title={Proving the Coding Interview: A Benchmark for Formally Verified Code Generation}, 
+      author={Quinn Dougherty and Ronak Mehta},
+      year={2025},
+      eprint={2502.05714},
+      archivePrefix={arXiv},
+      primaryClass={cs.SE},
+      url={https://arxiv.org/abs/2502.05714}, 
+}
 ```
 
 ## Reproducing our baselines
