@@ -1,4 +1,4 @@
-from src.benchmark.utils.code_blocks import extract_code_block
+from benchmark.utils.code_blocks import extract_code_block
 
 
 def test_extract_code_block():

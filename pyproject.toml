@@ -56,5 +56,5 @@ packages = ["src/benchmark", "src/baselines", "src/scripts"]
 
 [tool.pytest.ini_options]
 testpaths = [
-  "test"
+  "src/test"
 ]

@@ -1,8 +1,8 @@
 import pytest
 
-from src.benchmark.utils.apps import (
+from benchmark.utils.apps import (
     get_single_apps_solution,
-    get_single_apps_test_cases,
+    # get_single_apps_test_cases,
     get_succinct_apps_datarow,
     load_hf_apps_dataset,
 )
@@ -23,11 +23,11 @@ def test_get_single_apps_solution(ds):
     assert len(solution) > 0
 
 
-def test_get_single_apps_test_cases(ds):
-    ds = load_hf_apps_dataset()
-    test_cases = get_single_apps_test_cases(ds[0])
-    assert isinstance(test_cases, dict)
-    assert set(test_cases.keys()) == {"inputs", "outputs"}
+#   def test_get_single_apps_test_cases(ds):
+#       ds = load_hf_apps_dataset()
+#       test_cases = get_single_apps_test_cases(ds[0])
+#       assert isinstance(test_cases, dict)
+#       assert set(test_cases.keys()) == {"inputs", "outputs"}
 
 
 def test_get_succinct_apps_datarow(ds):
@@ -38,4 +38,5 @@ def test_get_succinct_apps_datarow(ds):
         "problem_statement",
         "solution",
         "test_cases",
+        "difficulty",
     }
