@@ -3,89 +3,141 @@
 
 #show: clean-math-presentation-theme.with(
   config-info(
-    title: [An example presentation to show how this template can be used],
-    short-title: [Short title that will be shown in the footer],
+    title: [Proving the Coding Interview: A Benchmark for Formally Verified Code Generation],
+    short-title: [Proving the Coding Interview],
     authors: (
-      (name: "First Author", affiliation-id: 1),
-      (name: "Second Author", affiliation-id: 2),
-      (name: "Third Author", affiliation-id: 1)),
-    author: "Presenting Author",
-    affiliations: (
-      (id: 1, name: "Fancy Department, University of Somewhere"),
-      (id: 2, name: "Important Institute, Nice University"),
+      (name: "Quinn Dougherty", affiliation-id: 1),
+      (name: "Ronak Mehta", affiliation-id: 2),
     ),
-    date: datetime(year: 2024, month: 11, day: 20),
+    author: "Quinn Dougherty",
+    affiliations: (
+      (id: 1, name: "Beneficial AI Foundation"),
+      (id: 2, name: "Coordinal Research"),
+    ),
+    date: datetime(year: 2025, month: 5, day: 3),
   ),
   config-common(
     slide-level: 2,
     //handout: true,
     //show-notes-on-second-screen: right,
   ),
-  progress-bar: false,
+  progress-bar: true,
 )
 
-#title-slide(
-  logo1: image("images/logo_placeholder.svg", height: 4.5em),
-)
+#title-slide(logo1: image("images/baif.svg", height: 4.5em))
 
 // == Outline <touying:hidden>
 
 // #components.adaptive-columns(outline(title: none))
 
-= First Section
-
-#slide(title: "Using the template")[
-  To use this template,
-  - import it at the beginning of your presentation like this: `#import "@preview/clean-math-presentation:0.1.1": *`
-  - import touying by `#import "@preview/touying:0.5.5": *`
-  - call the `#show: clean-math-presentation-theme.with()` function to set the title, authors, and other information of your presentation.
-
-  The title slide can be created with the `#title-slide()` command. You can pass a `background` (an image or `none`) and up to two logos `logo1` and `logo2`. \
-  The outline can be included, e.g., with `#components.adaptive-columns(outline(title: none))`.\
-  Normal slides can be created with `#slide()`. \
-  A lot of general documentation about the Touying package can be found #link("https://touying-typ.github.io/")[in the Touying documentation]. The general #link("https://typst.app/docs/")[typst documentation] is also helpful.
-]
+= Introduction
 
 #focus-slide[
-  Focus!
+  #image("images/hf.png")
 ]
 
-#slide(title: "Theorems")[
-  Theorems can be created with the `#theorem` command. Similarly, there are `#proof`, `#definition`, `#example`, `#lemma`, and `#corollary`. \
-  For example, here is a theorem:
-  #theorem(title: "Important one")[
-    Using theorems is easy.
-  ]
-  #proof[
-    This was very easy, wasn't it?
-  ]
+#slide(title: "FVAPPS: Formally Verified APPS")[
+  - We want more proof certificates per synthetic LoC.
+    #pause
+  - Previously, APPS (@Hendrycks2021MeasuringCC) scraped "job interview" style coding puzzles to be completed by python synthesis.
+    #pause
+  - In FVAPPS, we convert these python problems to lean problems, and state correctness theorems.
   #pause
-  A definition already given by well-known mathematicians @Author1978definition is:
-  #definition(title: "Important stuff")[
-    _Important stuff_ is defined as the stuff that is important to me:
-    $
-      exp(upright(i) pi) + 1 = 0.
-    $
-  ]
+  #image("images/hendrycks-et-al.png")
 ]
 
-#slide(title: "Equations")[
-  Equations with a label with a label will be numbered automatically:
-  $
-    integral_0^oo exp(-x^2) dif x = pi/2
-  $<eq:important>
-  We can then refer to this equation as @eq:important.
-  Equations without a label will not be numbered:
-  $
-    sum_(n=1)^oo 1/n^2 = pi^2/6
-  $
-  Inline math equations will not break across lines, which can be seen here: $a x^2 + b x + c = 0 => x_(1,2) = (-b plus.minus sqrt(b^2 - 4 a c))/(2 a)$
+= Benchmark Generation
+#focus-slide[
+  Benchmark Generation
 ]
+
+#slide(title: "Scaffold")[
+  #table(
+    columns: (auto, auto),
+    inset: 10pt,
+    align: horizon,
+    image("images/fig3.png"),
+    [
+      - A _scaffold_ or _agent_ is an architecture involving LLM calls and observations (_tool use_).
+      #pause
+      - The simplest possible architecture, which is all we need, is a *loop*.
+    ],
+  )
+]
+
+#slide(title: "Benchmark Generation Pipeline")[
+  #image("images/fig1.png")
+]
+
+#slide(title: "Example Sample")[
+  #image("images/fig2.png")
+]
+
+#slide(title: "Theorems per sample")[
+  #image("images/fig4.png")
+]
+
+= Baselines
+
+#focus-slide[
+  Baselines
+]
+
+#slide(title: "What did we test?")[
+  - LLMs were given a loop scaffold similar to that in the generation.
+  #pause
+  - We measured Sonnet 3.5 (October 2024) and Gemini 1.5 Pro (retrieved November 2024)
+  #pause
+  - A human baseliner attempted one sample for 10 hours
+]
+
+#slide(title: "Model baselines")[
+  #table(
+    columns: (auto, auto),
+    inset: 10pt,
+    align: horizon,
+    image("images/fig3.png"),
+    [
+      406 theorems were attempted across 101 randomly selected samples
+
+      Each sample requires a function definition to be filled in before theorems can be attempted
+
+      On these, Sonnet proved 30% and Gemini proved 18%
+    ],
+  )
+]
+#slide(title: "Model baselines")[
+  #image("images/table2.png")
+]
+#slide(title: "Model baselines")[
+  #table(
+    columns: (auto, auto),
+    inset: 10pt,
+    align: horizon,
+    image("images/fig7.png"),
+    [
+      Of the theorems that got eventually completed, roughly 20% of each model’s were done in zero or one iteration of the loop.
+    ],
+  )
+]
+#slide(title: "Model baselines")[
+  #image("images/fig6.png")
+]
+
+#focus-slide[Future]
+
+#slide(title: "Future")[
+  - Quality control for *soundness* (no false positives) could be improved
+  #pause
+  - Harvesting property tests from the real world and turning them into Lean theorems (go from job interview code to real code)
+]
+
+#focus-slide[#image("images/qr.gif")]
 
 #show: appendix
 
 = References
 
 #slide(title: "References")[
-  #bibliography("bibliography.bib", title: none)
+  #bibliography("refs.bib", title: none, style: "ieee")
 ]
