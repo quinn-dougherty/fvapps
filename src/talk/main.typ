@@ -36,14 +36,47 @@
   #image("images/hf.png")
 ]
 
+= Motivation
+#focus-slide[Motivation]
+
 #slide(title: "FVAPPS: Formally Verified APPS")[
   - We want more proof certificates per synthetic LoC.
     #pause
-  - Previously, APPS (@Hendrycks2021MeasuringCC) scraped "job interview" style coding puzzles to be completed by python synthesis.
+  - Previously, APPS (@Hendrycks2021MeasuringCC) scraped "job interview" style coding puzzles to be completed by Python synthesis.
     #pause
-  - In FVAPPS, we convert these python problems to lean problems, and state correctness theorems.
+  - In FVAPPS, we convert these *Python* problems to *Lean* problems, and state correctness theorems.
+    #pause
+  - FVAPPS ships 4715 questions, each consisting of a function definition and 2-5 theorems, with a curated subset of 1083 samples.
   #pause
   #image("images/hendrycks-et-al.png")
+]
+
+#slide(title: "Formal verification and proof assistants: quality assurance")[
+  #table(
+    columns: (auto, auto),
+    inset: 10pt,
+    align: horizon,
+    table.header([*QA Process*], [*Blindspot*]),
+    [Unit tests], [What did I forget to test?],
+    [Fuzzing/property-based tests], [Cases are non-exhaustive],
+    [Formal verification], [The "world-spec gap" (i.e. sidechannels)],
+  )
+  #pause
+  Proof assistants accomplish this degree of assurance by _exploiting inductive structure_.
+]
+#slide(
+  title: "Formal verification and proof assistants: compile time knowledge",
+)[
+  - Python is ruled by _runtime knowledge_: the absence of an initial error message is tiny evidence that your program is correct
+  - A dependent type theory like Lean is ruled by _compiletime knowledge_: the absence of an error message is strong evidence that your program is correct.
+]
+
+#slide(
+  title: "Formal verification and proof assistants: out with math, in with software",
+)[
+  - Most formal proof automation effort is invested into mathematics (i.e. MiniF2F)
+  - Instead, we could focus on *software* to bring the assurances of type theory to the real world
+  - This benchmark is a babystep in that direction
 ]
 
 = Benchmark Generation
@@ -124,6 +157,7 @@
   #image("images/fig6.png")
 ]
 
+= Future
 #focus-slide[Future]
 
 #slide(title: "Future")[
